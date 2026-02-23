@@ -16,6 +16,7 @@ public class InfoControllerImpl implements InfoController {
 
     @Override
     public InfoResponse getConnectorInfo() {
+//        throw new RuntimeException("Not supported in this version");
         ConnectorInfo connectorInfo = new ConnectorInfo();
         connectorInfo.setId("czertainly.common.credential.provider");
         connectorInfo.setName("Common Credential Provider");
@@ -29,14 +30,19 @@ public class InfoControllerImpl implements InfoController {
         connectorInterfaceInfoHealth.setCode(ConnectorInterface.HEALTH);
         connectorInterfaceInfoHealth.setVersion("v2");
 
-        ConnectorInterfaceInfo connectorInterfaceInfoCredential = new ConnectorInterfaceInfo();
-        connectorInterfaceInfoCredential.setCode(ConnectorInterface.CREDENTIAL_PROVIDER);
-        connectorInterfaceInfoCredential.setVersion("v1");
-        connectorInterfaceInfoCredential.setFeatures(List.of(CommonFeatureFlag.STATELESS));
+        ConnectorInterfaceInfo connectorInterfaceInfoMetrics = new ConnectorInterfaceInfo();
+        connectorInterfaceInfoHealth.setCode(ConnectorInterface.METRICS);
+        connectorInterfaceInfoHealth.setVersion("v1");
+        connectorInterfaceInfoHealth.setFeatures(List.of(FeatureFlag.OPEN_METRICS));
+
+        ConnectorInterfaceInfo connectorInterfaceInfoSecret = new ConnectorInterfaceInfo();
+        connectorInterfaceInfoSecret.setCode(ConnectorInterface.SECRET);
+        connectorInterfaceInfoSecret.setVersion("v1");
+        connectorInterfaceInfoSecret.setFeatures(List.of(FeatureFlag.STATELESS));
 
         InfoResponse infoResponse = new InfoResponse();
-        infoResponse.setConnectorInfo(connectorInfo);
-        infoResponse.setInterfaces(List.of(connectorInterfaceInfo, connectorInterfaceInfoHealth, connectorInterfaceInfoCredential));
+        infoResponse.setConnector(connectorInfo);
+        infoResponse.setInterfaces(List.of(connectorInterfaceInfo, connectorInterfaceInfoHealth, connectorInterfaceInfoMetrics, connectorInterfaceInfoSecret));
 
         return infoResponse;
     }

@@ -13,6 +13,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,6 +22,18 @@ import java.util.stream.Collectors;
 public class ExceptionHandlingAdvice {
 
     private static final Logger LOG = LoggerFactory.getLogger(ExceptionHandlingAdvice.class);
+
+    /**
+     * Handler for {@link NoResourceFoundException}
+     *
+     * @param ex Caught {@link NoResourceFoundException}
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorMessageDto handleNoResourceFoundException(NoResourceFoundException ex) {
+        LOG.warn("HTTP 404: {}", ex.getMessage());
+        return ErrorMessageDto.getInstance(ex.getMessage());
+    }
 
     /**
      * Handler for {@link NotFoundException}

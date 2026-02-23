@@ -25,13 +25,14 @@ public class InfoControllerImpl implements InfoController {
 
     private EndpointsListener endpointsListener;
 
-    private static final List<String> KINDS = List.of("SoftKeyStore", "Basic", "ApiKey");
+    private static final List<String> KINDS = List.of("SoftKeyStore2", "Basic2", "ApiKey2");
 
     @Override
     public List<InfoResponse> listSupportedFunctions() {
-        logger.info("Listing the end points for common credential provider");
-        List<InfoResponse> functions = new ArrayList<>();
-        functions.add(new InfoResponse(KINDS, FunctionGroupCode.CREDENTIAL_PROVIDER, endpointsListener.getEndpoints(FunctionGroupCode.CREDENTIAL_PROVIDER)));
-        return functions;
+        throw new RuntimeException("Not supported in this version");
+//        logger.info("Listing the end points for common credential provider");
+//        List<InfoResponse> functions = new ArrayList<>();
+//        functions.add(new InfoResponse(KINDS, FunctionGroupCode.CREDENTIAL_PROVIDER, endpointsListener.getEndpoints(FunctionGroupCode.CREDENTIAL_PROVIDER)));
+//        return functions;
     }
 }
