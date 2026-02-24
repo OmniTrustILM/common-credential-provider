@@ -29,10 +29,9 @@ public class InfoControllerImpl implements InfoController {
 
     @Override
     public List<InfoResponse> listSupportedFunctions() {
-        throw new RuntimeException("Not supported in this version");
-//        logger.info("Listing the end points for common credential provider");
-//        List<InfoResponse> functions = new ArrayList<>();
-//        functions.add(new InfoResponse(KINDS, FunctionGroupCode.CREDENTIAL_PROVIDER, endpointsListener.getEndpoints(FunctionGroupCode.CREDENTIAL_PROVIDER)));
-//        return functions;
+        logger.info("Listing the end points for common credential provider");
+        List<InfoResponse> functions = new ArrayList<>();
+        functions.add(new InfoResponse(KINDS, FunctionGroupCode.CREDENTIAL_PROVIDER, endpointsListener.getEndpoints(FunctionGroupCode.CREDENTIAL_PROVIDER)));
+        return functions;
     }
 }
