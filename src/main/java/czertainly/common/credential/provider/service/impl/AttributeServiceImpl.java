@@ -3,16 +3,16 @@ package czertainly.common.credential.provider.service.impl;
 import com.czertainly.api.exception.ValidationError;
 import com.czertainly.api.exception.ValidationException;
 import com.czertainly.api.interfaces.connector.AttributesController;
-import com.czertainly.api.model.client.attribute.RequestAttributeDto;
-import com.czertainly.api.model.common.attribute.v2.AttributeType;
-import com.czertainly.api.model.common.attribute.v2.BaseAttribute;
-import com.czertainly.api.model.common.attribute.v2.DataAttribute;
-import com.czertainly.api.model.common.attribute.v2.content.AttributeContentType;
-import com.czertainly.api.model.common.attribute.v2.content.BaseAttributeContent;
-import com.czertainly.api.model.common.attribute.v2.content.FileAttributeContent;
-import com.czertainly.api.model.common.attribute.v2.content.SecretAttributeContent;
-import com.czertainly.api.model.common.attribute.v2.content.StringAttributeContent;
-import com.czertainly.api.model.common.attribute.v2.properties.DataAttributeProperties;
+import com.czertainly.api.model.client.attribute.RequestAttribute;
+import com.czertainly.api.model.common.attribute.common.AttributeContent;
+import com.czertainly.api.model.common.attribute.common.AttributeType;
+import com.czertainly.api.model.common.attribute.common.BaseAttribute;
+import com.czertainly.api.model.common.attribute.common.content.AttributeContentType;
+import com.czertainly.api.model.common.attribute.common.properties.DataAttributeProperties;
+import com.czertainly.api.model.common.attribute.v2.DataAttributeV2;
+import com.czertainly.api.model.common.attribute.v2.content.FileAttributeContentV2;
+import com.czertainly.api.model.common.attribute.v2.content.SecretAttributeContentV2;
+import com.czertainly.api.model.common.attribute.v2.content.StringAttributeContentV2;
 import com.czertainly.core.util.AttributeDefinitionUtils;
 import czertainly.common.credential.provider.service.AttributeService;
 import org.apache.commons.lang3.StringUtils;
@@ -78,32 +78,28 @@ public class AttributeServiceImpl implements AttributeService {
     }
 
     @Override
-    public boolean validateAttributes(String kind, List<RequestAttributeDto> attributes) {
-        switch (kind) {
+    public boolean validateAttributes(String kind, List<RequestAttribute> attributes) {
+        return switch (kind) {
             // TODO: kinds should be defined as constants, all Pascal Case
-            case "SoftKeyStore":
-                return validateSofKeyStoreAttributes(attributes);
-            case "Basic":
-                return validateBasicAttributes(attributes);
-            case "ApiKey":
-                return validateApiKeyAttributes(attributes);
-            default:
-                throw new ValidationException(ValidationError.create("Unsupported credential kind {}", kind));
-        }
+            case "SoftKeyStore" -> validateSofKeyStoreAttributes(attributes);
+            case "Basic" -> validateBasicAttributes(attributes);
+            case "ApiKey" -> validateApiKeyAttributes(attributes);
+            default -> throw new ValidationException(ValidationError.create("Unsupported credential kind {}", kind));
+        };
     }
 
     private List<BaseAttribute> getSofKeyStoreAttributes() {
         List<BaseAttribute> attrs = new ArrayList<>();
 
-        List<BaseAttributeContent> keyStoreTypes = new ArrayList<>();
+        List<AttributeContent> keyStoreTypes = new ArrayList<>();
         for (String supportedKeyStoreType : supportedKeyStoreTypes) {
-            StringAttributeContent keyStoreType = new StringAttributeContent();
+            StringAttributeContentV2 keyStoreType = new StringAttributeContentV2();
             keyStoreType.setReference(supportedKeyStoreType);
             keyStoreType.setData(supportedKeyStoreType);
             keyStoreTypes.add(keyStoreType);
         }
 
-        DataAttribute keyStoreType = new DataAttribute();
+        DataAttributeV2 keyStoreType = new DataAttributeV2();
         keyStoreType.setUuid("e334e055-900e-43f1-aedc-54e837028de0");
         keyStoreType.setName(ATTRIBUTE_KEYSTORE_TYPE);
         DataAttributeProperties keyStoreTypeProperties = new DataAttributeProperties();
@@ -121,7 +117,7 @@ public class AttributeServiceImpl implements AttributeService {
         keyStoreType.setProperties(keyStoreTypeProperties);
         attrs.add(keyStoreType);
 
-        DataAttribute keyStore = new DataAttribute();
+        DataAttributeV2 keyStore = new DataAttributeV2();
         keyStore.setUuid("6df7ace9-c501-4d58-953c-f8d53d4fb378");
         keyStore.setName(ATTRIBUTE_KEYSTORE);
         keyStore.setDescription("Key store file");
@@ -138,7 +134,7 @@ public class AttributeServiceImpl implements AttributeService {
         keyStore.setProperties(keyStoreProperties);
         attrs.add(keyStore);
 
-        DataAttribute keyStorePassword = new DataAttribute();
+        DataAttributeV2 keyStorePassword = new DataAttributeV2();
         keyStorePassword.setUuid("d975fe42-9d09-4740-a362-fc26f98e55ea");
         keyStorePassword.setName(ATTRIBUTE_KEYSTORE_PASSWORD);
         keyStorePassword.setDescription("Key store password");
@@ -155,7 +151,7 @@ public class AttributeServiceImpl implements AttributeService {
         keyStorePassword.setProperties(keyStorePasswordProperties);
         attrs.add(keyStorePassword);
 
-        DataAttribute trustStoreType = new DataAttribute();
+        DataAttributeV2 trustStoreType = new DataAttributeV2();
         trustStoreType.setUuid("c4454807-805a-44e2-81d1-94b56e993786");
         trustStoreType.setName(ATTRIBUTE_TRUSTSTORE_TYPE);
         trustStoreType.setDescription("Trust store type");
@@ -173,7 +169,7 @@ public class AttributeServiceImpl implements AttributeService {
         trustStoreType.setProperties(trustStoreTypeProperties);
         attrs.add(trustStoreType);
 
-        DataAttribute trustStore = new DataAttribute();
+        DataAttributeV2 trustStore = new DataAttributeV2();
         trustStore.setUuid("6a245220-eaf4-44cb-9079-2228ad9264f5");
         trustStore.setName(ATTRIBUTE_TRUSTSTORE);
         trustStore.setDescription("Trust store file");
@@ -190,7 +186,7 @@ public class AttributeServiceImpl implements AttributeService {
         trustStore.setProperties(trustStoreProperties);
         attrs.add(trustStore);
 
-        DataAttribute trustStorePassword = new DataAttribute();
+        DataAttributeV2 trustStorePassword = new DataAttributeV2();
         trustStorePassword.setUuid("85a874da-1413-4770-9830-4188a37c95ee");
         trustStorePassword.setName(ATTRIBUTE_TRUSTSTORE_PASSWORD);
         trustStorePassword.setDescription("Trust store password");
@@ -210,16 +206,16 @@ public class AttributeServiceImpl implements AttributeService {
         return attrs;
     }
 
-    private boolean validateSofKeyStoreAttributes(List<RequestAttributeDto> attributes) {
+    private boolean validateSofKeyStoreAttributes(List<RequestAttribute> attributes) {
         AttributeDefinitionUtils.validateAttributes(getSofKeyStoreAttributes(), attributes);
 
         try {
-            String keyStoreBase64 = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_KEYSTORE, attributes, FileAttributeContent.class).get(0).getData().getContent();
+            String keyStoreBase64 = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_KEYSTORE, attributes, FileAttributeContentV2.class).get(0).getData().getContent();
             byte[] keyStoreBytes = Base64.getDecoder().decode(keyStoreBase64);
 
-            String keyStoreType = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_KEYSTORE_TYPE, attributes, StringAttributeContent.class).get(0).getData();
+            String keyStoreType = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_KEYSTORE_TYPE, attributes, StringAttributeContentV2.class).get(0).getData();
 
-            String keyStorePassword = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_KEYSTORE_PASSWORD, attributes, SecretAttributeContent.class).get(0).getData().getSecret();
+            String keyStorePassword = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_KEYSTORE_PASSWORD, attributes, SecretAttributeContentV2.class).get(0).getData().getSecret();
 
             KeyStore keyStore = KeyStore.getInstance(keyStoreType);
             keyStore.load(new ByteArrayInputStream(keyStoreBytes), keyStorePassword.toCharArray());
@@ -231,9 +227,9 @@ public class AttributeServiceImpl implements AttributeService {
         }
 
         try {
-            List<FileAttributeContent> trustStoreBase64 = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_TRUSTSTORE, attributes, FileAttributeContent.class);
-            List<StringAttributeContent> trustStoreType = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_TRUSTSTORE_TYPE, attributes, StringAttributeContent.class);
-            List<SecretAttributeContent> trustStorePassword = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_TRUSTSTORE_PASSWORD, attributes, SecretAttributeContent.class);
+            List<FileAttributeContentV2> trustStoreBase64 = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_TRUSTSTORE, attributes, FileAttributeContentV2.class);
+            List<StringAttributeContentV2> trustStoreType = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_TRUSTSTORE_TYPE, attributes, StringAttributeContentV2.class);
+            List<SecretAttributeContentV2> trustStorePassword = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_TRUSTSTORE_PASSWORD, attributes, SecretAttributeContentV2.class);
 
             boolean isSetTrustStoreBase64 = trustStoreBase64 != null && !trustStoreBase64.isEmpty() && trustStoreBase64.get(0).getData() != null && trustStoreBase64.get(0).getData().getContent() != null;
             boolean isSetTrustStoreType = trustStoreType != null && !trustStoreType.isEmpty() && trustStoreType.get(0).getData() != null;
@@ -263,7 +259,7 @@ public class AttributeServiceImpl implements AttributeService {
     private List<BaseAttribute> getBasicAttributes() {
         List<BaseAttribute> attrs = new ArrayList<>();
 
-        DataAttribute username = new DataAttribute();
+        DataAttributeV2 username = new DataAttributeV2();
         username.setUuid("fe2d6d35-fb3d-4ea0-9f0b-7e39be93beeb");
         username.setName(ATTRIBUTE_USERNAME);
         username.setDescription("Username");
@@ -280,7 +276,7 @@ public class AttributeServiceImpl implements AttributeService {
         username.setProperties(usernameProperties);
         attrs.add(username);
 
-        DataAttribute password = new DataAttribute();
+        DataAttributeV2 password = new DataAttributeV2();
         password.setUuid("04506d45-c865-4ddc-b6fc-117ee5d5c8e7");
         password.setName(ATTRIBUTE_PASSWORD);
         password.setDescription("Password");
@@ -300,7 +296,7 @@ public class AttributeServiceImpl implements AttributeService {
         return attrs;
     }
 
-    private boolean validateBasicAttributes(List<RequestAttributeDto> attributes) {
+    private boolean validateBasicAttributes(List<RequestAttribute> attributes) {
         AttributeDefinitionUtils.validateAttributes(getBasicAttributes(), attributes);
         return true;
     }
@@ -308,7 +304,7 @@ public class AttributeServiceImpl implements AttributeService {
     private List<BaseAttribute> getApiKeyAttributes() {
         List<BaseAttribute> attrs = new ArrayList<>();
 
-        DataAttribute apiKey = new DataAttribute();
+        DataAttributeV2 apiKey = new DataAttributeV2();
         apiKey.setUuid("aac5c2d5-5dc3-4ddb-9dfa-3d76b99135f8");
         apiKey.setName(ATTRIBUTE_APIKEY);
         apiKey.setDescription("API Key");
@@ -328,7 +324,7 @@ public class AttributeServiceImpl implements AttributeService {
         return attrs;
     }
 
-    private boolean validateApiKeyAttributes(List<RequestAttributeDto> attributes) {
+    private boolean validateApiKeyAttributes(List<RequestAttribute> attributes) {
         AttributeDefinitionUtils.validateAttributes(getApiKeyAttributes(), attributes);
         return true;
     }

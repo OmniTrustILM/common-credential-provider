@@ -1,0 +1,26 @@
+keyStore:
+  supportedTypes: PKCS12, JKS
+
+management:
+  endpoints:
+    jmx:
+      exposure:
+        exclude: '*'
+    web:
+      base-path: '/'
+      exposure:
+        include: health, info
+
+spring:
+  datasource:
+    url: 'jdbc:hsqldb:mem:myDb;sql.syntax_pgs=true'
+    username: sa
+    password:
+    driver-class-name: 'org.hsqldb.jdbc.JDBCDriver'
+  flyway:
+    enabled: false
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-message: ${INCLUDE_ERROR:always}

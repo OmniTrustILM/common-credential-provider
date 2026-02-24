@@ -1,5 +1,5 @@
 # Build stage
-FROM maven:3.9.9-eclipse-temurin-21 AS build
+FROM maven:3.9.12-eclipse-temurin-21 AS build
 COPY src /home/app/src
 COPY pom.xml /home/app
 COPY settings.xml /root/.m2/settings.xml
@@ -7,7 +7,7 @@ COPY docker /home/app/docker
 RUN mvn -f /home/app/pom.xml clean package
 
 # Package stage
-FROM eclipse-temurin:21.0.7_6-jre-alpine
+FROM eclipse-temurin:21.0.10_7-jre-alpine
 
 LABEL org.opencontainers.image.authors="CZERTAINLY <support@czertainly.com>"
 
