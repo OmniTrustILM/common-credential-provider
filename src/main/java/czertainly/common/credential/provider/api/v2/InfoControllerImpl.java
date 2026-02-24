@@ -8,15 +8,18 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@RestController("InfoControllerV2")
+@RestController("infoControllerV2")
 public class InfoControllerImpl implements InfoController {
 
+    private final BuildProperties buildProperties;
+
     @Autowired
-    private BuildProperties buildProperties;
+    public InfoControllerImpl(BuildProperties buildProperties) {
+        this.buildProperties = buildProperties;
+    }
 
     @Override
     public InfoResponse getConnectorInfo() {
-//        throw new RuntimeException("Not supported in this version");
         ConnectorInfo connectorInfo = new ConnectorInfo();
         connectorInfo.setId("czertainly.common.credential.provider");
         connectorInfo.setName("Common Credential Provider");

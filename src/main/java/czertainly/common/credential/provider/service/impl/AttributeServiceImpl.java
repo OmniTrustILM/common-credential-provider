@@ -79,17 +79,13 @@ public class AttributeServiceImpl implements AttributeService {
 
     @Override
     public boolean validateAttributes(String kind, List<RequestAttribute> attributes) {
-        switch (kind) {
+        return switch (kind) {
             // TODO: kinds should be defined as constants, all Pascal Case
-            case "SoftKeyStore":
-                return validateSofKeyStoreAttributes(attributes);
-            case "Basic":
-                return validateBasicAttributes(attributes);
-            case "ApiKey":
-                return validateApiKeyAttributes(attributes);
-            default:
-                throw new ValidationException(ValidationError.create("Unsupported credential kind {}", kind));
-        }
+            case "SoftKeyStore" -> validateSofKeyStoreAttributes(attributes);
+            case "Basic" -> validateBasicAttributes(attributes);
+            case "ApiKey" -> validateApiKeyAttributes(attributes);
+            default -> throw new ValidationException(ValidationError.create("Unsupported credential kind {}", kind));
+        };
     }
 
     private List<BaseAttribute> getSofKeyStoreAttributes() {
