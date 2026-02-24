@@ -1,0 +1,24 @@
+keyStore:
+  supportedTypes: PKCS12, JKS
+
+spring:
+  datasource:
+    url: 'jdbc:hsqldb:mem:myDb;sql.syntax_pgs=true'
+    username: sa
+    password:
+    driver-class-name: 'org.hsqldb.jdbc.JDBCDriver'
+  flyway:
+    enabled: false
+  jpa:
+    properties:
+      hibernate:
+        default_schema: ${DB_SCHEMA:common_secret}
+        jdbc:
+          batch_size: 500
+        order_inserts: true
+        order_updates: true
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-message: ${INCLUDE_ERROR:always}
