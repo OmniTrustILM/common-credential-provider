@@ -1,6 +1,5 @@
 package czertainly.common.credential.provider;
 
-import com.czertainly.api.exception.*;
 import com.czertainly.api.model.common.error.ErrorCode;
 import com.czertainly.api.model.common.error.ProblemDetailExtended;
 import org.slf4j.Logger;

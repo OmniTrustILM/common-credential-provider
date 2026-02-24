@@ -10,7 +10,6 @@ import com.czertainly.api.model.common.attribute.v2.content.FileAttributeContent
 import com.czertainly.api.model.common.attribute.v2.content.SecretAttributeContentV2;
 import com.czertainly.api.model.common.attribute.v2.content.StringAttributeContentV2;
 import czertainly.common.credential.provider.service.AttributeService;
-import czertainly.common.credential.provider.service.impl.AttributeServiceImpl;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +31,7 @@ import java.util.List;
 import java.util.UUID;
 
 @SpringBootTest
-public class AttributeServiceTest {
+class AttributeServiceTest {
 
     private static final String KEYSTORE_PASSWORD = "123456";
     private static final String KEYSTORE_TYPE = "JKS";
@@ -45,7 +44,7 @@ public class AttributeServiceTest {
     private List<RequestAttribute> attributesApiKey;
 
     @BeforeEach
-    public void setup() throws KeyStoreException, CertificateException, IOException, NoSuchAlgorithmException {
+    void setup() throws KeyStoreException, CertificateException, IOException, NoSuchAlgorithmException {
         Security.addProvider(new BouncyCastleProvider());
 
         RequestAttributeV2 username = new RequestAttributeV2();
@@ -80,40 +79,40 @@ public class AttributeServiceTest {
     }
 
     @Test
-    public void testSoftkeyAttributeResponse() {
+    void testSoftkeyAttributeResponse() {
         List<BaseAttribute> attributes = attributeService.getAttributes("SoftKeyStore");
         Assertions.assertEquals(6, attributes.size());
     }
 
     @Test
-    public void testBasicAttributeResponse() {
+    void testBasicAttributeResponse() {
         List<BaseAttribute> attributes = attributeService.getAttributes("Basic");
         Assertions.assertEquals(2, attributes.size());
     }
 
     @Test
-    public void testApiKeyAttributeResponse() {
+    void testApiKeyAttributeResponse() {
         List<BaseAttribute> attributes = attributeService.getAttributes("ApiKey");
         Assertions.assertEquals(1, attributes.size());
     }
 
     @Test
-    public void testValidateAttributesBasic() {
+    void testValidateAttributesBasic() {
         Assertions.assertTrue(attributeService.validateAttributes("Basic", attributesBasic));
     }
 
     @Test
-    public void testValidateAttributesApiKey() {
+    void testValidateAttributesApiKey() {
         Assertions.assertTrue(attributeService.validateAttributes("ApiKey", attributesApiKey));
     }
 
     @Test
-    public void testValidateAttributes_Fail() {
+    void testValidateAttributes_Fail() {
         Assertions.assertThrows(ValidationException.class, () -> attributeService.validateAttributes("default",null));
     }
 
     @Test
-    public void testValidateSoftKeyStoreAttributes_InvalidKeyStoreContent_ThrowsValidationException() {
+    void testValidateSoftKeyStoreAttributes_InvalidKeyStoreContent_ThrowsValidationException() {
         List<RequestAttribute> attributes = createKeyStoreAttributesWithInvalidContent();
 
         Assertions.assertThrows(ValidationException.class, () ->
@@ -121,7 +120,7 @@ public class AttributeServiceTest {
     }
 
     @Test
-    public void testValidateSoftKeyStoreAttributes_WrongPassword_ThrowsValidationException() {
+    void testValidateSoftKeyStoreAttributes_WrongPassword_ThrowsValidationException() {
         List<RequestAttribute> attributes = createKeyStoreAttributesWithWrongPassword();
 
         Assertions.assertThrows(ValidationException.class, () ->
@@ -129,7 +128,7 @@ public class AttributeServiceTest {
     }
 
     @Test
-    public void testValidateSoftKeyStoreAttributes_InvalidKeyStoreType_ThrowsValidationException() {
+    void testValidateSoftKeyStoreAttributes_InvalidKeyStoreType_ThrowsValidationException() {
         List<RequestAttribute> attributes = createKeyStoreAttributesWithInvalidType();
 
         Assertions.assertThrows(ValidationException.class, () ->
@@ -137,7 +136,7 @@ public class AttributeServiceTest {
     }
 
     @Test
-    public void testValidateSoftKeyStoreAttributes_PartialTrustStoreAttributes_ThrowsValidationException() {
+    void testValidateSoftKeyStoreAttributes_PartialTrustStoreAttributes_ThrowsValidationException() {
         List<RequestAttribute> attributes = createKeyStoreWithPartialTrustStoreAttributes();
 
         Assertions.assertThrows(ValidationException.class, () ->
