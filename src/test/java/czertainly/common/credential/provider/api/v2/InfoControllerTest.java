@@ -9,12 +9,12 @@ import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class InfoControllerTest {
+class InfoControllerTest {
 
     private InfoControllerImpl infoController;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         Properties props = new Properties();
         props.setProperty("version", "1.0.0");
         BuildProperties buildProperties = new BuildProperties(props);
@@ -22,7 +22,7 @@ public class InfoControllerTest {
     }
 
     @Test
-    public void testGetConnectorInfo_ReturnsCorrectConnectorInfo() {
+    void testGetConnectorInfo_ReturnsCorrectConnectorInfo() {
         InfoResponse response = infoController.getConnectorInfo();
 
         assertNotNull(response);

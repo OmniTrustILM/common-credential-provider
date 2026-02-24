@@ -155,7 +155,7 @@ class AttributeServiceTest {
 
         FileAttributeContentData fileAttributeContentData = new FileAttributeContentData();
         fileAttributeContentData.setContent(validKeyStoreBase64);
-        fileAttributeContentData.setContent(KEYSTORE_TYPE);
+        fileAttributeContentData.setFileName(KEYSTORE_TYPE);
         fileAttributeContentData.setMimeType("application/octet-stream");
 
         FileAttributeContentV2 fileContent = new FileAttributeContentV2();
@@ -182,7 +182,7 @@ class AttributeServiceTest {
 
         FileAttributeContentData fileAttributeContentData = new FileAttributeContentData();
         fileAttributeContentData.setContent(Base64.getEncoder().encodeToString("invalid".getBytes()));
-        fileAttributeContentData.setContent(KEYSTORE_TYPE);
+        fileAttributeContentData.setFileName(KEYSTORE_TYPE);
         fileAttributeContentData.setMimeType("application/octet-stream");
 
         FileAttributeContentV2 fileContent = new FileAttributeContentV2();

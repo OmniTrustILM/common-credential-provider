@@ -22,6 +22,8 @@ public class ProblemDetailsHandlingAdvice extends ResponseEntityExceptionHandler
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGeneralException(Exception ex) {
         LOG.error("General error occurred: {}", ex.getMessage(), ex);
-        return ProblemDetailExtended.fromErrorCode(ErrorCode.RESOURCE_NOT_FOUND, "Just testing.", null, null);
+
+        // needs to be updated to return ProblemDetailExtended with proper error code and details, currently just returning SERVICE_UNAVAILABLE for any unhandled exception
+        return ProblemDetailExtended.fromErrorCode(ErrorCode.SERVICE_UNAVAILABLE, ex.getMessage(), null, null);
     }
 }
