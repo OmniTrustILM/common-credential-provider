@@ -3,16 +3,16 @@ keyStore:
 
 spring:
   datasource:
-    url: 'jdbc:hsqldb:mem:myDb;sql.syntax_pgs=true'
-    username: sa
-    password:
-    driver-class-name: 'org.hsqldb.jdbc.JDBCDriver'
+    url: jdbc:tc:postgresql:17-alpine:///common_secret-test
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
   flyway:
     enabled: false
   jpa:
+    hibernate:
+      ddl-auto: create-drop
     properties:
       hibernate:
-        default_schema: ${DB_SCHEMA:common_secret}
+        default_schema: public
         jdbc:
           batch_size: 500
         order_inserts: true
