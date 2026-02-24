@@ -1,6 +1,16 @@
 keyStore:
   supportedTypes: PKCS12, JKS
 
+management:
+  endpoints:
+    jmx:
+      exposure:
+        exclude: '*'
+    web:
+      base-path: '/'
+      exposure:
+        include: health, info
+
 spring:
   datasource:
     url: 'jdbc:hsqldb:mem:myDb;sql.syntax_pgs=true'
@@ -9,14 +19,6 @@ spring:
     driver-class-name: 'org.hsqldb.jdbc.JDBCDriver'
   flyway:
     enabled: false
-  jpa:
-    properties:
-      hibernate:
-        default_schema: ${DB_SCHEMA:common_secret}
-        jdbc:
-          batch_size: 500
-        order_inserts: true
-        order_updates: true
 
 server:
   port: ${PORT:8080}
