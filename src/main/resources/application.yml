@@ -62,3 +62,7 @@ server:
   port: ${PORT:8080}
   error:
     include-message: ${INCLUDE_ERROR:always}
+
+secrets:
+  encryption:
+    key: ${ENCRYPTION_KEY:@YhM#BPLOzwc_N7kD,wr}
