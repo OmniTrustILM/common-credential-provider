@@ -11,7 +11,7 @@ import com.czertainly.api.model.connector.secrets.SecretResponseDto;
 import com.czertainly.api.model.connector.secrets.SecretType;
 import com.czertainly.api.model.connector.secrets.UpdateSecretRequestDto;
 import czertainly.common.credential.provider.service.SecretService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -19,9 +19,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/v1/secretProvider/secrets")
-@RequiredArgsConstructor
 public class SecretControllerImpl implements SecretController {
     private final SecretService secretService;
+
+    @Autowired
+    public SecretControllerImpl(SecretService secretService) {
+        this.secretService = secretService;
+    }
 
     @Override
     public SecretContentResponseDto getSecretContent(SecretRequestDto request, String version) throws NotFoundException {

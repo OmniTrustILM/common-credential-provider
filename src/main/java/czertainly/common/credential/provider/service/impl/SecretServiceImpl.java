@@ -12,8 +12,8 @@ import com.czertainly.api.model.connector.secrets.UpdateSecretRequestDto;
 import czertainly.common.credential.provider.dao.entity.Secret;
 import czertainly.common.credential.provider.dao.repository.SecretRepository;
 import czertainly.common.credential.provider.service.SecretService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,10 +22,14 @@ import java.util.Optional;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class SecretServiceImpl implements SecretService {
 
     private final SecretRepository secretRepository;
+
+    @Autowired
+    public SecretServiceImpl(SecretRepository secretRepository) {
+        this.secretRepository = secretRepository;
+    }
 
     @Override
     @Transactional
