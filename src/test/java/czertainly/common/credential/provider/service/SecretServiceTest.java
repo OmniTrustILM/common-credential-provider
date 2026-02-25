@@ -12,16 +12,16 @@ import com.czertainly.api.model.connector.secrets.content.KeyStoreType;
 import com.czertainly.api.model.connector.secrets.content.KeyValueSecretContent;
 import com.czertainly.api.model.connector.secrets.content.PrivateKeySecretContent;
 import com.czertainly.api.model.connector.secrets.content.SecretContent;
+import czertainly.common.credential.provider.BuildInfoTestConfig;
 import czertainly.common.credential.provider.dao.repository.SecretRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
 import java.util.Map;
@@ -29,7 +29,7 @@ import java.util.Map;
 
 @SpringBootTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({BuildProperties.class})
+@Import(BuildInfoTestConfig.class)
 class SecretServiceTest {
 
     private static final String TEST_SECRET_NAME = "testSecret";
@@ -40,6 +40,9 @@ class SecretServiceTest {
 
     @Autowired
     private SecretRepository secretRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @BeforeEach
     void setUp() {
@@ -175,6 +178,35 @@ class SecretServiceTest {
     void testGetSecretAttributes_ShouldReturnEmptyList() {
         List<BaseAttribute> attributes = secretService.getSecretAttributes(SecretType.BASIC_AUTH);
         Assertions.assertTrue(attributes.isEmpty());
+    }
+
+    // ========== Encryption Tests ==========
+
+    @Test
+    void testSecretContent_InDatabaseIsEncrypted() throws AlreadyExistException {
+        // Arrange
+        String secretPassword = "mySecretPassword";
+        CreateSecretRequestDto createRequest = createRequest(TEST_SECRET_NAME,
+                new BasicAuthSecretContent("testUser", secretPassword));
+
+        // Act
+        secretService.createSecret(createRequest);
+
+        // Assert - Retrieve raw encrypted content from database
+        String rawDatabaseContent = jdbcTemplate.queryForObject(
+                "SELECT secret_content FROM secret WHERE name = ? AND secret_type = ?",
+                String.class,
+                TEST_SECRET_NAME,
+                SecretType.BASIC_AUTH.toString()
+        );
+
+        Assertions.assertNotNull(rawDatabaseContent, "Database content should not be null");
+        Assertions.assertFalse(rawDatabaseContent.contains(secretPassword),
+                "Database content should not contain plaintext password");
+        Assertions.assertFalse(rawDatabaseContent.contains("testUser"),
+                "Database content should not contain plaintext username");
+        Assertions.assertTrue(rawDatabaseContent.startsWith("v1|"),
+                "Encrypted content should start with version prefix 'v1|'");
     }
 
     // ========== Helper Methods ==========

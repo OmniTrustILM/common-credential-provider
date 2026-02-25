@@ -32,3 +32,7 @@ server:
   port: ${PORT:8080}
   error:
     include-message: ${INCLUDE_ERROR:always}
+
+secrets:
+  encryption:
+    key: test123

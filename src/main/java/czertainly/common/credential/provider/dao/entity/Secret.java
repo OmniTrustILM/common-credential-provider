@@ -3,7 +3,9 @@ package czertainly.common.credential.provider.dao.entity;
 import com.czertainly.api.model.client.attribute.RequestAttribute;
 import com.czertainly.api.model.connector.secrets.SecretType;
 import com.czertainly.api.model.connector.secrets.content.SecretContent;
+import czertainly.common.credential.provider.util.SecretContentEncryptionConverter;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
@@ -32,7 +34,7 @@ import java.util.Objects;
 @AllArgsConstructor
 public class Secret {
     @Id
-    @Column(name = "name", nullable = false)
+    @Column(name = "name", nullable = false, updatable = false)
     private String name;
 
     @Column(name = "secret_version", nullable = false)
@@ -42,9 +44,9 @@ public class Secret {
     @Enumerated(EnumType.STRING)
     private SecretType secretType;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "secret_content", nullable = false, columnDefinition = "jsonb")
-    private SecretContent secretContent;
+    @Column(name = "secret_content", nullable = false, length = 65535)
+    @Convert(converter = SecretContentEncryptionConverter.class)
+    private SecretContent secretContent; // encrypted
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "vault_attributes", columnDefinition = "jsonb")
@@ -56,12 +58,27 @@ public class Secret {
 
     // No metadata. We don't need them.
 
+//    public SecretContent getSecretContent() {
+//        if (secretContent != null) {
+//            return SecretsUtil.decodeAndDecryptSecretString(secretContent, SecretEncodingVersion.V1);
+//        }
+//        return null;
+//    }
+//
+//    public void setSecretContent(SecretContent secretContent) {
+//        if (secretContent != null) {
+//            this.secretContent = SecretsUtil.encryptAndEncodeSecretString(secretContent, SecretEncodingVersion.V1);
+//        } else {
+//            this.secretContent = null;
+//        }
+//    }
+
     public void incrementVersionIfNumeric() {
         try {
             int existingVersion = Integer.parseInt(secretVersion);
             setSecretVersion(String.valueOf(existingVersion + 1));
         } catch (NumberFormatException e) {
-            // Preserve existing version when it cannot be parsed as a number.
+            // Preserve the existing version when it cannot be parsed as a number.
         }
     }
 
