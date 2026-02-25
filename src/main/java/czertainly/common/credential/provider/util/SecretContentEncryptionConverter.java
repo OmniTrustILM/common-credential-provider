@@ -49,5 +49,4 @@ public class SecretContentEncryptionConverter implements AttributeConverter<Secr
             return null;
         }
     }
-
 }

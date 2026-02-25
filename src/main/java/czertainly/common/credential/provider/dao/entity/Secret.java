@@ -58,21 +58,6 @@ public class Secret {
 
     // No metadata. We don't need them.
 
-//    public SecretContent getSecretContent() {
-//        if (secretContent != null) {
-//            return SecretsUtil.decodeAndDecryptSecretString(secretContent, SecretEncodingVersion.V1);
-//        }
-//        return null;
-//    }
-//
-//    public void setSecretContent(SecretContent secretContent) {
-//        if (secretContent != null) {
-//            this.secretContent = SecretsUtil.encryptAndEncodeSecretString(secretContent, SecretEncodingVersion.V1);
-//        } else {
-//            this.secretContent = null;
-//        }
-//    }
-
     public void incrementVersionIfNumeric() {
         try {
             int existingVersion = Integer.parseInt(secretVersion);

@@ -3,7 +3,6 @@ package czertainly.common.credential.provider.mapper;
 import com.czertainly.api.model.connector.secrets.CreateSecretRequestDto;
 import com.czertainly.api.model.connector.secrets.SecretContentResponseDto;
 import com.czertainly.api.model.connector.secrets.SecretResponseDto;
-import com.czertainly.api.model.connector.secrets.UpdateSecretRequestDto;
 import czertainly.common.credential.provider.dao.entity.Secret;
 
 public final class SecretMapper {
