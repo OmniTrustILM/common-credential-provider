@@ -14,7 +14,7 @@ public final class SecretMapper {
 
     public static Secret toEntity(CreateSecretRequestDto request) {
         return Secret.builder()
-                .id(new SecretCompositeId(request.getName(), request.getSecret().getType(), "1"))
+                .id(new SecretCompositeId(request.getName(), request.getSecret().getType(), 1))
                 .secretContent(request.getSecret())
                 .secretAttributes(request.getSecretAttributes())
                 .vaultAttributes(request.getVaultAttributes())
@@ -25,13 +25,13 @@ public final class SecretMapper {
         return SecretResponseDto.builder()
                 .name(entity.getId().getName())
                 .type(entity.getId().getSecretType())
-                .version(entity.getId().getVersion())
+                .version(String.valueOf(entity.getId().getVersion()))
                 .build();
     }
 
     public static SecretContentResponseDto toContentResponse(Secret entity) {
         return SecretContentResponseDto.builder()
-                .version(entity.getId().getVersion())
+                .version(String.valueOf(entity.getId().getVersion()))
                 .content(entity.getSecretContent())
                 .build();
     }

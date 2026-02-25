@@ -44,7 +44,7 @@ public class SecretServiceImpl implements SecretService {
         entity = secretRepository.save(entity);
 
         SecretResponseDto response = SecretMapper.toResponse(entity);
-        log.debug("Secret {}/{} created", name, secretType);
+        log.debug("Secret {}/{}/{} created", name, secretType, entity.getId().getVersion());
         return response;
     }
 
@@ -53,15 +53,23 @@ public class SecretServiceImpl implements SecretService {
     public SecretContentResponseDto getSecretContent(SecretRequestDto request, String version) throws NotFoundException {
         String name = request.getName();
         SecretType secretType = request.getType();
-        log.debug("Getting content of secret {}/{}", name, secretType);
 
         Secret entity;
         if (version != null && !version.isEmpty()) {
+            int numericVersion;
+            try {
+                numericVersion = Integer.parseInt(version);
+            } catch (NumberFormatException e) {
+                throw new NotFoundException(Secret.class, formatSecretKey(name, secretType, version));
+            }
             // Retrieve the specific version
-            entity = secretRepository.findByNameAndSecretTypeAndVersion(name, secretType, version)
-                    .orElseThrow(() -> new NotFoundException(Secret.class, formatSecretKey(name, secretType, version)));
+            log.debug("Getting content of secret {}/{}/{}", name, secretType, version);
+            entity = secretRepository.findByNameAndSecretTypeAndVersion(name, secretType, numericVersion)
+                    .orElseThrow(() -> new NotFoundException(Secret.class, formatSecretKey(name, secretType, String.valueOf(numericVersion))));
         } else {
             // Retrieve the latest version
+            version = "latest";
+            log.debug("Getting content of secret {}/{}/latest", name, secretType);
             var allVersions = secretRepository.findByNameAndSecretTypeOrderByVersionDesc(name, secretType);
             if (allVersions.isEmpty()) {
                 throw new NotFoundException(Secret.class, formatSecretKey(name, secretType));
@@ -70,7 +78,7 @@ public class SecretServiceImpl implements SecretService {
         }
 
         SecretContentResponseDto response = SecretMapper.toContentResponse(entity);
-        log.debug("Retrieved content of secret {}/{}", name, secretType);
+        log.debug("Retrieved content of secret {}/{}/{}", name, secretType, version);
         return response;
     }
 
@@ -98,11 +106,11 @@ public class SecretServiceImpl implements SecretService {
                 .secretAttributes(request.getSecretAttributes())
                 .build();
 
-        newEntity.incrementVersionIfNumeric();
+        newEntity.incrementVersion();
         newEntity = secretRepository.save(newEntity);
 
         SecretResponseDto response = SecretMapper.toResponse(newEntity);
-        log.debug("Updated secret {}/{}", name, secretType);
+        log.debug("Updated secret {}/{}/{}", name, secretType, newEntity.getId().getVersion());
         return response;
     }
 

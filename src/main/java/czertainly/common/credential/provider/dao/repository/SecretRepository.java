@@ -18,7 +18,7 @@ public interface SecretRepository extends JpaRepository<Secret, SecretCompositeI
     List<Secret> findByNameAndSecretTypeOrderByVersionDesc(@Param("name") String name, @Param("secretType") SecretType secretType);
 
     @Query("SELECT s FROM Secret s WHERE s.id.name = :name AND s.id.secretType = :secretType AND s.id.version = :version")
-    Optional<Secret> findByNameAndSecretTypeAndVersion(@Param("name") String name, @Param("secretType") SecretType secretType, @Param("version") String version);
+    Optional<Secret> findByNameAndSecretTypeAndVersion(@Param("name") String name, @Param("secretType") SecretType secretType, @Param("version") int version);
 
     @Modifying
     @Query("DELETE FROM Secret s WHERE s.id.name = :name AND s.id.secretType = :secretType")

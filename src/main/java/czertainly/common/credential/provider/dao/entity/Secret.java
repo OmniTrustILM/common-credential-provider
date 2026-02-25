@@ -47,13 +47,8 @@ public class Secret {
 
     // No metadata. We don't need them.
 
-    public void incrementVersionIfNumeric() {
-        try {
-            int existingVersion = Integer.parseInt(id.getVersion());
-            id.setVersion(String.valueOf(existingVersion + 1));
-        } catch (NumberFormatException e) {
-            // Preserve the existing version when it cannot be parsed as a number.
-        }
+    public void incrementVersion() {
+        id.setVersion(id.getVersion() + 1);
     }
 
     @Override

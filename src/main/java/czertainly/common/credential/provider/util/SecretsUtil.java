@@ -1,6 +1,5 @@
 package czertainly.common.credential.provider.util;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -23,7 +22,6 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.Base64;
 
 @Component
-@Slf4j
 public class SecretsUtil {
     // Using secure authenticated encryption: AES/GCM/NoPadding with PBKDF2
     private static final String AEAD_ALGORITHM = "AES/GCM/NoPadding";
@@ -153,10 +151,6 @@ public class SecretsUtil {
         encoded.append(Base64.getEncoder().encodeToString(iv));
         encoded.append("|");
         encoded.append(iterations);
-
-        if (log.isTraceEnabled()) {
-            log.trace("Encoded data: " + encoded);
-        }
 
         return encoded.toString();
     }

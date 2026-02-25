@@ -24,10 +24,10 @@ public class SecretCompositeId implements Serializable {
     @Column(name = "name", nullable = false, updatable = false)
     private String name;
 
-    @Column(name = "secret_type", nullable = false)
+    @Column(name = "secret_type", nullable = false, updatable = false)
     @Enumerated(EnumType.STRING)
     private SecretType secretType;
 
     @Column(name = "secret_version", nullable = false, updatable = false)
-    private String version;
+    private int version;
 }
