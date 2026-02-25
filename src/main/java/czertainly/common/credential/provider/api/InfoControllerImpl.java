@@ -25,7 +25,7 @@ public class InfoControllerImpl implements InfoController {
 
     private EndpointsListener endpointsListener;
 
-    private static final List<String> KINDS = List.of("SoftKeyStore", "Basic", "ApiKey");
+    private static final List<String> KINDS = List.of("SoftKeyStore2", "Basic2", "ApiKey2");
 
     @Override
     public List<InfoResponse> listSupportedFunctions() {

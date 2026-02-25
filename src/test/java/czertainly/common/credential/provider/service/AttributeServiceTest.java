@@ -1,4 +1,4 @@
-package czertainly.common.credential.provider;
+package czertainly.common.credential.provider.service;
 
 import com.czertainly.api.exception.ValidationException;
 import com.czertainly.api.model.client.attribute.RequestAttribute;
@@ -9,13 +9,15 @@ import com.czertainly.api.model.common.attribute.common.content.data.SecretAttri
 import com.czertainly.api.model.common.attribute.v2.content.FileAttributeContentV2;
 import com.czertainly.api.model.common.attribute.v2.content.SecretAttributeContentV2;
 import com.czertainly.api.model.common.attribute.v2.content.StringAttributeContentV2;
-import czertainly.common.credential.provider.service.AttributeService;
+import czertainly.common.credential.provider.KeyStoreTest;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -31,6 +33,7 @@ import java.util.List;
 import java.util.UUID;
 
 @SpringBootTest
+@Import({BuildProperties.class})
 class AttributeServiceTest {
 
     private static final String KEYSTORE_PASSWORD = "123456";
