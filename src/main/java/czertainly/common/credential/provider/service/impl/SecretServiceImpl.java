@@ -12,13 +12,13 @@ import com.czertainly.api.model.connector.secrets.UpdateSecretRequestDto;
 import czertainly.common.credential.provider.dao.entity.Secret;
 import czertainly.common.credential.provider.dao.repository.SecretRepository;
 import czertainly.common.credential.provider.service.SecretService;
+import czertainly.common.credential.provider.mapper.SecretMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @Slf4j
@@ -37,26 +37,12 @@ public class SecretServiceImpl implements SecretService {
         String name = request.getName();
         SecretType secretType = request.getSecret().getType();
         log.debug("Creating secret {}/{}", name, secretType);
-        Optional<Secret> existing = secretRepository.findByNameAndSecretType(name, secretType);
-        if (existing.isPresent()) {
-            throw new AlreadyExistException(Secret.class, name + "/" + secretType);
-        }
+        ensureSecretDoesNotExist(name, secretType);
 
-        Secret entity = Secret.builder()
-                .name(request.getName())
-                .secretVersion("1")
-                .secretType(request.getSecret().getType())
-                .secretContent(request.getSecret())
-                .secretAttributes(request.getSecretAttributes())
-                .vaultAttributes(request.getVaultAttributes())
-                .build();
+        Secret entity = SecretMapper.toEntity(request);
         entity = secretRepository.save(entity);
 
-        SecretResponseDto response = SecretResponseDto.builder()
-                .name(entity.getName())
-                .type(entity.getSecretType())
-                .version(entity.getSecretVersion())
-                .build();
+        SecretResponseDto response = SecretMapper.toResponse(entity);
         log.debug("Secret {}/{} created", name, secretType);
         return response;
     }
@@ -67,17 +53,13 @@ public class SecretServiceImpl implements SecretService {
         String name = request.getName();
         SecretType secretType = request.getType();
         log.debug("Getting content of secret {}/{}", name, secretType);
-        Secret entity = secretRepository.findByNameAndSecretType(name, secretType)
-                .orElseThrow(() -> new NotFoundException(Secret.class, name + "/" + secretType));
+        // Versioning is not supported by this provider, so the latest is always returned.
+        Secret entity = getSecretOrThrow(name, secretType);
 
-        SecretContentResponseDto response = SecretContentResponseDto.builder()
-                .version(entity.getSecretVersion())
-                .content(entity.getSecretContent())
-                .build();
+        SecretContentResponseDto response = SecretMapper.toContentResponse(entity);
         log.debug("Retrieved content of secret {}/{}", name, secretType);
         return response;
     }
-
 
     @Override
     @Transactional
@@ -85,26 +67,16 @@ public class SecretServiceImpl implements SecretService {
         String name = request.getName();
         SecretType secretType = request.getSecret().getType();
         log.debug("Updating secret {}/{}", name, secretType);
-        Secret entity = secretRepository.findByNameAndSecretType(name, secretType)
-                .orElseThrow(() -> new NotFoundException(Secret.class, name + "/" + secretType));
+        Secret entity = getSecretOrThrow(name, secretType);
 
-        try {
-            var existingVersion = Integer.parseInt(entity.getSecretVersion());
-            entity.setSecretVersion(String.valueOf(existingVersion + 1));
-        } catch (NumberFormatException e) {
-            // ignore version incrementing
-        }
+        entity.incrementVersionIfNumeric();
         entity.setSecretType(request.getSecret().getType());
         entity.setSecretContent(request.getSecret());
         entity.setVaultAttributes(request.getVaultAttributes());
         entity.setSecretAttributes(request.getSecretAttributes());
         entity = secretRepository.save(entity);
 
-        SecretResponseDto response = SecretResponseDto.builder()
-                .name(entity.getName())
-                .type(entity.getSecretType())
-                .version(entity.getSecretVersion())
-                .build();
+        SecretResponseDto response = SecretMapper.toResponse(entity);
         log.debug("Updated secret {}/{}", name, secretType);
         return response;
     }
@@ -122,7 +94,7 @@ public class SecretServiceImpl implements SecretService {
             return;
         }
 
-        throw new NotFoundException(Secret.class, name + "/" + secretType);
+        throw new NotFoundException(Secret.class, formatSecretKey(name, secretType));
     }
 
     @Override
@@ -141,5 +113,20 @@ public class SecretServiceImpl implements SecretService {
     public List<BaseAttribute> getSecretAttributes(SecretType secretType) {
         // This provider does not need any special attributes for managing a given secret type.
         return List.of();
+    }
+
+    private void ensureSecretDoesNotExist(String name, SecretType secretType) throws AlreadyExistException {
+        if (secretRepository.findByNameAndSecretType(name, secretType).isPresent()) {
+            throw new AlreadyExistException(Secret.class, formatSecretKey(name, secretType));
+        }
+    }
+
+    private Secret getSecretOrThrow(String name, SecretType secretType) throws NotFoundException {
+        return secretRepository.findByNameAndSecretType(name, secretType)
+                .orElseThrow(() -> new NotFoundException(Secret.class, formatSecretKey(name, secretType)));
+    }
+
+    private String formatSecretKey(String name, SecretType secretType) {
+        return name + "/" + secretType;
     }
 }

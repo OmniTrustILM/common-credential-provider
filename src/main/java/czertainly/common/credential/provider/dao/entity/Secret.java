@@ -56,6 +56,15 @@ public class Secret {
 
     // No metadata. We don't need them.
 
+    public void incrementVersionIfNumeric() {
+        try {
+            int existingVersion = Integer.parseInt(secretVersion);
+            setSecretVersion(String.valueOf(existingVersion + 1));
+        } catch (NumberFormatException e) {
+            // Preserve existing version when it cannot be parsed as a number.
+        }
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
