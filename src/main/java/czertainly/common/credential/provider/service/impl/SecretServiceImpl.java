@@ -70,7 +70,6 @@ public class SecretServiceImpl implements SecretService {
         Secret entity = getSecretOrThrow(name, secretType);
 
         entity.incrementVersionIfNumeric();
-        entity.setSecretType(request.getSecret().getType());
         entity.setSecretContent(request.getSecret());
         entity.setVaultAttributes(request.getVaultAttributes());
         entity.setSecretAttributes(request.getSecretAttributes());

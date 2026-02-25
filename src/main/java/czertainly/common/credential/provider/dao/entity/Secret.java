@@ -1,16 +1,13 @@
 package czertainly.common.credential.provider.dao.entity;
 
 import com.czertainly.api.model.client.attribute.RequestAttribute;
-import com.czertainly.api.model.connector.secrets.SecretType;
 import com.czertainly.api.model.connector.secrets.content.SecretContent;
 import czertainly.common.credential.provider.util.SecretContentEncryptionConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
+import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,16 +30,11 @@ import java.util.Objects;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Secret {
-    @Id
-    @Column(name = "name", nullable = false, updatable = false)
-    private String name;
+    @EmbeddedId
+    private SecretCompositeId id;
 
     @Column(name = "secret_version", nullable = false)
     private String secretVersion;
-
-    @Column(name = "secret_type", nullable = false)
-    @Enumerated(EnumType.STRING)
-    private SecretType secretType;
 
     @Column(name = "secret_content", nullable = false, length = 65535)
     @Convert(converter = SecretContentEncryptionConverter.class)
@@ -72,11 +64,11 @@ public class Secret {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Secret secret = (Secret) o;
-        return Objects.equals(name, secret.name) && Objects.equals(secretType, secret.secretType);
+        return Objects.equals(id, secret.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, secretType);
+        return Objects.hash(id);
     }
 }
