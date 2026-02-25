@@ -18,7 +18,16 @@ import static org.junit.jupiter.api.Assertions.*;
 @Import(BuildInfoTestConfig.class)
 @DisplayName("SecretsUtil Tests")
 class SecretsUtilTest {
+    /**
+     * Comprehensive test suite for SecretsUtil class covering:
+     * - Encryption/decryption with AES-GCM
+     * - Format validation and consistency
+     * - Tampering detection
+     * - Unsupported version handling
+     * - Edge cases (special chars, unicode, long secrets, etc.)
+     */
 
+    // ==================== Test Constants ====================
     private static final String STANDARD_SECRET = "This is my secret value I want to protect";
     private static final String SPECIAL_CHARS_SECRET = "Special!@#$%^&*()_+-={}[]|\\:\";<>?,./~`";
     private static final String UNICODE_SECRET = "Unicode: 你好世界 🌍 Привет";
@@ -303,19 +312,207 @@ class SecretsUtilTest {
                             exception.getMessage().contains("corrupted or tampered"),
                     "Exception message should indicate data corruption or tampering");
         }
+    }
 
-        /**
-         * Helper method to tamper with a specific part of an encoded secret
-         *
-         * @param encodedSecret the original encoded secret
-         * @param partIndex     the index of the part to tamper (0-based)
-         * @param tamperedData  the data to replace the part with
-         * @return the tampered secret string
-         */
-        private String tamperPart(String encodedSecret, int partIndex, byte[] tamperedData) {
-            String[] parts = encodedSecret.split("\\|");
-            parts[partIndex] = Base64.getEncoder().encodeToString(tamperedData);
-            return String.join("|", parts);
+    @Nested
+    @DisplayName("Unsupported Version Tests")
+    class UnsupportedVersionTests {
+
+        @Test
+        @DisplayName("Should throw exception when encrypting with unsupported version")
+        void shouldThrowExceptionForUnsupportedEncryptionVersion() {
+            IllegalArgumentException exception = assertThrows(
+                    IllegalArgumentException.class,
+                    () -> secretsUtil.encryptAndEncodeSecretString(STANDARD_SECRET, null),
+                    "Should throw exception for null version"
+            );
+
+            assertTrue(exception.getMessage().contains("Secret version not supported"),
+                    "Exception message should indicate unsupported version");
         }
+
+        @Test
+        @DisplayName("Should throw exception when decrypting with unsupported version")
+        void shouldThrowExceptionForUnsupportedDecryptionVersion() {
+            String encodedSecret = secretsUtil.encryptAndEncodeSecretString(STANDARD_SECRET, VERSION);
+
+            IllegalArgumentException exception = assertThrows(
+                    IllegalArgumentException.class,
+                    () -> secretsUtil.decodeAndDecryptSecretString(encodedSecret, null),
+                    "Should throw exception for null version during decryption"
+            );
+
+            assertTrue(exception.getMessage().contains("Secret version not supported"),
+                    "Exception message should indicate unsupported version");
+        }
+    }
+
+    @Nested
+    @DisplayName("Invalid Iterations Tests")
+    class InvalidIterationsTests {
+
+        @Test
+        @DisplayName("Should throw exception for invalid iterations format")
+        void shouldThrowExceptionForInvalidIterationsFormat() {
+            String invalidSecret = "v1|" + Base64.getEncoder().encodeToString("data".getBytes()) +
+                    "|" + Base64.getEncoder().encodeToString(new byte[32]) +
+                    "|" + Base64.getEncoder().encodeToString(new byte[12]) +
+                    "|notAnInteger";
+
+            NumberFormatException exception = assertThrows(
+                    NumberFormatException.class,
+                    () -> secretsUtil.decodeAndDecryptSecretString(invalidSecret, VERSION),
+                    "Should throw exception when iterations is not an integer"
+            );
+
+            assertNotNull(exception, "Exception should be thrown for invalid iterations");
+        }
+
+        @Test
+        @DisplayName("Should throw exception for null secret string")
+        void shouldThrowExceptionForNullSecretString() {
+            assertThrows(
+                    NullPointerException.class,
+                    () -> secretsUtil.decodeAndDecryptSecretString(null, VERSION),
+                    "Should throw exception when secret string is null"
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("Edge Cases Tests")
+    class EdgeCasesTests {
+
+        @Test
+        @DisplayName("Should handle secret with pipe character")
+        void shouldHandleSecretWithPipeCharacter() {
+            String secretWithPipe = "secret|with|pipes";
+
+            String encodedSecret = secretsUtil.encryptAndEncodeSecretString(secretWithPipe, VERSION);
+            String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret, VERSION);
+
+            assertEquals(secretWithPipe, decodedSecret,
+                    "Secret containing pipe characters should be encrypted and decrypted correctly");
+        }
+
+        @Test
+        @DisplayName("Should handle very long base64 encoded secrets")
+        void shouldHandleVeryLongSecrets() {
+            String veryLongSecret = "X".repeat(100000);
+
+            String encodedSecret = secretsUtil.encryptAndEncodeSecretString(veryLongSecret, VERSION);
+            assertNotNull(encodedSecret, "Encoded secret should not be null");
+
+            String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret, VERSION);
+            assertEquals(veryLongSecret, decodedSecret,
+                    "Very long secret should be encrypted and decrypted correctly");
+        }
+
+        @Test
+        @DisplayName("Should handle secret with newlines and special formatting")
+        void shouldHandleSecretWithNewlines() {
+            String secretWithNewlines = "line1\nline2\nline3\ttab";
+
+            String encodedSecret = secretsUtil.encryptAndEncodeSecretString(secretWithNewlines, VERSION);
+            String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret, VERSION);
+
+            assertEquals(secretWithNewlines, decodedSecret,
+                    "Secret with newlines should be encrypted and decrypted correctly");
+        }
+
+        @Test
+        @DisplayName("Should maintain consistency across multiple encryption/decryption cycles")
+        void shouldMaintainConsistencyAcrossMultipleCycles() {
+            String original = STANDARD_SECRET;
+
+            for (int i = 0; i < 5; i++) {
+                String encoded = secretsUtil.encryptAndEncodeSecretString(original, VERSION);
+                String decoded = secretsUtil.decodeAndDecryptSecretString(encoded, VERSION);
+                assertEquals(original, decoded,
+                        "Cycle " + (i + 1) + " should maintain consistency");
+            }
+        }
+
+        @Test
+        @DisplayName("Should preserve exact content of secret including leading/trailing spaces")
+        void shouldPreserveExactContent() {
+            String secretWithSpaces = "  leading and trailing spaces  ";
+
+            String encodedSecret = secretsUtil.encryptAndEncodeSecretString(secretWithSpaces, VERSION);
+            String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret, VERSION);
+
+            assertEquals(secretWithSpaces, decodedSecret,
+                    "Exact content with spaces should be preserved");
+        }
+    }
+
+    @Nested
+    @DisplayName("Format Consistency Tests")
+    class FormatConsistencyTests {
+
+        @Test
+        @DisplayName("Should always produce 5-part format for V1")
+        void shouldAlwaysProduceFivePartFormat() {
+            for (int i = 0; i < 10; i++) {
+                String encoded = secretsUtil.encryptAndEncodeSecretString(STANDARD_SECRET, VERSION);
+                String[] parts = encoded.split("\\|", -1);
+
+                assertEquals(EXPECTED_PARTS_COUNT, parts.length,
+                        "Iteration " + i + " should produce exactly " + EXPECTED_PARTS_COUNT + " parts");
+                assertEquals("v1", parts[0],
+                        "Iteration " + i + " should start with v1");
+            }
+        }
+
+        @Test
+        @DisplayName("Should produce valid base64 in all parts")
+        void shouldProduceValidBase64InAllParts() {
+            String encoded = secretsUtil.encryptAndEncodeSecretString(STANDARD_SECRET, VERSION);
+            String[] parts = encoded.split("\\|");
+
+            // Test encrypted data
+            assertDoesNotThrow(() -> Base64.getDecoder().decode(parts[1]),
+                    "Encrypted data should be valid base64");
+
+            // Test salt
+            assertDoesNotThrow(() -> Base64.getDecoder().decode(parts[2]),
+                    "Salt should be valid base64");
+
+            // Test IV
+            assertDoesNotThrow(() -> Base64.getDecoder().decode(parts[3]),
+                    "IV should be valid base64");
+        }
+
+        @Test
+        @DisplayName("Should have correct part sizes")
+        void shouldHaveCorrectPartSizes() {
+            String encoded = secretsUtil.encryptAndEncodeSecretString(STANDARD_SECRET, VERSION);
+            String[] parts = encoded.split("\\|");
+
+            byte[] salt = Base64.getDecoder().decode(parts[2]);
+            byte[] iv = Base64.getDecoder().decode(parts[3]);
+
+            assertEquals(SALT_SIZE_BYTES, salt.length,
+                    "Salt should be " + SALT_SIZE_BYTES + " bytes");
+            assertEquals(IV_SIZE_BYTES, iv.length,
+                    "IV should be " + IV_SIZE_BYTES + " bytes");
+        }
+    }
+
+    // ==================== Helper Methods ====================
+
+    /**
+     * Tampers with a specific part of an encoded secret for testing purposes.
+     * This is used in security tests to verify tampering detection.
+     *
+     * @param encodedSecret the original encoded secret string
+     * @param partIndex     the index of the part to tamper (0-based, where 0 is version)
+     * @param tamperedData  the data to replace the part with
+     * @return the tampered secret string
+     */
+    private String tamperPart(String encodedSecret, int partIndex, byte[] tamperedData) {
+        String[] parts = encodedSecret.split("\\|");
+        parts[partIndex] = Base64.getEncoder().encodeToString(tamperedData);
+        return String.join("|", parts);
     }
 }
