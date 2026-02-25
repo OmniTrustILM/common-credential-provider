@@ -131,7 +131,7 @@ public class SecretsUtil {
     }
 
     /**
-     * Encoded the secret value into string
+     * Encodes the secret value into string
      * v1|secret|salt|iv|iterations
      *
      * @param secret value to be encoded
