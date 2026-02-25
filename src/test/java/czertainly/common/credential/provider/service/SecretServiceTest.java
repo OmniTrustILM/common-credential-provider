@@ -53,7 +53,7 @@ class SecretServiceTest {
 
     @Test
     void testCreateSecret_WithBasicAuth_ShouldSucceed() throws AlreadyExistException {
-        CreateSecretRequestDto request = createRequest(TEST_SECRET_NAME, 
+        CreateSecretRequestDto request = createRequest(TEST_SECRET_NAME,
                 new BasicAuthSecretContent("testUser", "testPassword"));
 
         SecretResponseDto response = secretService.createSecret(request);
@@ -63,21 +63,21 @@ class SecretServiceTest {
 
     @Test
     void testCreateSecret_WithDuplicateNameAndType_ShouldThrowAlreadyExistException() throws AlreadyExistException {
-        CreateSecretRequestDto request = createRequest(TEST_SECRET_NAME, 
+        CreateSecretRequestDto request = createRequest(TEST_SECRET_NAME,
                 new BasicAuthSecretContent("testUser", "testPassword"));
         secretService.createSecret(request);
 
-        Assertions.assertThrows(AlreadyExistException.class, 
+        Assertions.assertThrows(AlreadyExistException.class,
                 () -> secretService.createSecret(request));
     }
 
     @Test
     void testCreateSecret_WithDifferentType_ShouldSucceedForSameName() throws AlreadyExistException {
-        CreateSecretRequestDto basicAuthRequest = createRequest(TEST_SECRET_NAME, 
+        CreateSecretRequestDto basicAuthRequest = createRequest(TEST_SECRET_NAME,
                 new BasicAuthSecretContent("testUser", "testPassword"));
         secretService.createSecret(basicAuthRequest);
 
-        CreateSecretRequestDto apiKeyRequest = createRequest(TEST_SECRET_NAME, 
+        CreateSecretRequestDto apiKeyRequest = createRequest(TEST_SECRET_NAME,
                 new ApiKeySecretContent("content-whatever"));
         SecretResponseDto response = secretService.createSecret(apiKeyRequest);
 
@@ -88,7 +88,7 @@ class SecretServiceTest {
 
     @Test
     void testGetSecretContent_WithExistingSecret_ShouldReturnContent() throws AlreadyExistException, NotFoundException {
-        CreateSecretRequestDto createRequest = createRequest(TEST_SECRET_NAME, 
+        CreateSecretRequestDto createRequest = createRequest(TEST_SECRET_NAME,
                 new JwtTokenSecretContent("token"));
         secretService.createSecret(createRequest);
 
@@ -103,15 +103,52 @@ class SecretServiceTest {
     void testGetSecretContent_WithNonExistentSecret_ShouldThrowNotFoundException() {
         SecretRequestDto request = createRequest(NON_EXISTENT_SECRET, SecretType.BASIC_AUTH);
 
-        Assertions.assertThrows(NotFoundException.class, 
+        Assertions.assertThrows(NotFoundException.class,
                 () -> secretService.getSecretContent(request, null));
+    }
+
+    @Test
+    void testGetSecretContent_WithSpecificVersion_ShouldReturnCorrectVersion() throws AlreadyExistException, NotFoundException {
+        // Create an initial secret with version 1
+        CreateSecretRequestDto createRequest = createRequest(TEST_SECRET_NAME,
+                new JwtTokenSecretContent("token1"));
+        secretService.createSecret(createRequest);
+
+        // Update to create version 2
+        UpdateSecretRequestDto updateRequest = new UpdateSecretRequestDto();
+        updateRequest.setName(TEST_SECRET_NAME);
+        updateRequest.setSecret(new JwtTokenSecretContent("token2"));
+        secretService.updateSecret(updateRequest);
+
+        // Update to create version 3
+        updateRequest.setSecret(new JwtTokenSecretContent("token3"));
+        secretService.updateSecret(updateRequest);
+
+        // Retrieve a specific version
+        SecretContentResponseDto responseV2 = secretService.getSecretContent(
+                createRequest(TEST_SECRET_NAME, SecretType.JWT_TOKEN), "2");
+
+        Assertions.assertNotNull(responseV2);
+        Assertions.assertEquals("2", responseV2.getVersion());
+        Assertions.assertEquals(new JwtTokenSecretContent("token2"), responseV2.getContent());
+    }
+
+    @Test
+    void testGetSecretContent_WithInvalidVersion_ShouldThrowNotFoundException() throws AlreadyExistException {
+        CreateSecretRequestDto createRequest = createRequest(TEST_SECRET_NAME,
+                new JwtTokenSecretContent("token"));
+        secretService.createSecret(createRequest);
+
+        Assertions.assertThrows(NotFoundException.class,
+                () -> secretService.getSecretContent(
+                        createRequest(TEST_SECRET_NAME, SecretType.JWT_TOKEN), "99"));
     }
 
     // ========== Update Secret Tests ==========
 
     @Test
     void testUpdateSecret_WithExistingSecret_ShouldIncrementVersion() throws AlreadyExistException, NotFoundException {
-        CreateSecretRequestDto createRequest = createRequest(TEST_SECRET_NAME, 
+        CreateSecretRequestDto createRequest = createRequest(TEST_SECRET_NAME,
                 new PrivateKeySecretContent("key"));
         secretService.createSecret(createRequest);
 
@@ -124,12 +161,41 @@ class SecretServiceTest {
     }
 
     @Test
+    void testUpdateSecret_WithMultipleUpdates_ShouldPersistAllVersions() throws AlreadyExistException, NotFoundException {
+        CreateSecretRequestDto createRequest = createRequest(TEST_SECRET_NAME,
+                new PrivateKeySecretContent("key1"));
+        secretService.createSecret(createRequest);
+
+        UpdateSecretRequestDto updateRequest = new UpdateSecretRequestDto();
+        updateRequest.setName(TEST_SECRET_NAME);
+        updateRequest.setSecret(new PrivateKeySecretContent("key2"));
+        SecretResponseDto response2 = secretService.updateSecret(updateRequest);
+        assertResponseIsValid(response2, TEST_SECRET_NAME, SecretType.PRIVATE_KEY, "2");
+
+        updateRequest.setSecret(new PrivateKeySecretContent("key3"));
+        SecretResponseDto response3 = secretService.updateSecret(updateRequest);
+        assertResponseIsValid(response3, TEST_SECRET_NAME, SecretType.PRIVATE_KEY, "3");
+
+        // Verify all versions are persisted
+        SecretContentResponseDto v1 = secretService.getSecretContent(
+                createRequest(TEST_SECRET_NAME, SecretType.PRIVATE_KEY), "1");
+        SecretContentResponseDto v2 = secretService.getSecretContent(
+                createRequest(TEST_SECRET_NAME, SecretType.PRIVATE_KEY), "2");
+        SecretContentResponseDto v3 = secretService.getSecretContent(
+                createRequest(TEST_SECRET_NAME, SecretType.PRIVATE_KEY), "3");
+
+        Assertions.assertEquals("1", v1.getVersion());
+        Assertions.assertEquals("2", v2.getVersion());
+        Assertions.assertEquals("3", v3.getVersion());
+    }
+
+    @Test
     void testUpdateSecret_WithNonExistentSecret_ShouldThrowNotFoundException() {
         UpdateSecretRequestDto updateRequest = new UpdateSecretRequestDto();
         updateRequest.setName(NON_EXISTENT_SECRET);
         updateRequest.setSecret(new KeyStoreSecretContent(KeyStoreType.PKCS12, "content", "password"));
 
-        Assertions.assertThrows(NotFoundException.class, 
+        Assertions.assertThrows(NotFoundException.class,
                 () -> secretService.updateSecret(updateRequest));
     }
 
@@ -137,14 +203,14 @@ class SecretServiceTest {
 
     @Test
     void testDeleteSecret_WithExistingSecret_ShouldRemoveSecret() throws AlreadyExistException, NotFoundException {
-        CreateSecretRequestDto createRequest = createRequest(TEST_SECRET_NAME, 
+        CreateSecretRequestDto createRequest = createRequest(TEST_SECRET_NAME,
                 new KeyValueSecretContent(Map.of("key", "value")));
         secretService.createSecret(createRequest);
 
         SecretRequestDto deleteRequest = createRequest(TEST_SECRET_NAME, SecretType.KEY_VALUE);
         secretService.deleteSecret(deleteRequest);
 
-        Assertions.assertThrows(NotFoundException.class, 
+        Assertions.assertThrows(NotFoundException.class,
                 () -> secretService.getSecretContent(deleteRequest, null));
     }
 
@@ -152,7 +218,7 @@ class SecretServiceTest {
     void testDeleteSecret_WithNonExistentSecret_ShouldThrowNotFoundException() {
         SecretRequestDto deleteRequest = createRequest(NON_EXISTENT_SECRET, SecretType.BASIC_AUTH);
 
-        Assertions.assertThrows(NotFoundException.class, 
+        Assertions.assertThrows(NotFoundException.class,
                 () -> secretService.deleteSecret(deleteRequest));
     }
 
@@ -162,7 +228,7 @@ class SecretServiceTest {
     void testRotateSecret_ShouldThrowUnsupportedOperationException() {
         SecretRequestDto request = createRequest(TEST_SECRET_NAME, SecretType.BASIC_AUTH);
 
-        Assertions.assertThrows(UnsupportedOperationException.class, 
+        Assertions.assertThrows(UnsupportedOperationException.class,
                 () -> secretService.rotateSecret(request));
     }
 
@@ -225,8 +291,8 @@ class SecretServiceTest {
         return request;
     }
 
-    private void assertResponseIsValid(SecretResponseDto response, String expectedName, 
-                                      SecretType expectedType, String expectedVersion) {
+    private void assertResponseIsValid(SecretResponseDto response, String expectedName,
+                                       SecretType expectedType, String expectedVersion) {
         Assertions.assertNotNull(response, "Response should not be null");
         Assertions.assertEquals(expectedName, response.getName(), "Secret name mismatch");
         Assertions.assertEquals(expectedType, response.getType(), "Secret type mismatch");

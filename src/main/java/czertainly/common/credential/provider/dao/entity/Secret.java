@@ -33,9 +33,6 @@ public class Secret {
     @EmbeddedId
     private SecretCompositeId id;
 
-    @Column(name = "secret_version", nullable = false)
-    private String secretVersion;
-
     @Column(name = "secret_content", nullable = false, length = 65535)
     @Convert(converter = SecretContentEncryptionConverter.class)
     private SecretContent secretContent; // encrypted
@@ -52,8 +49,8 @@ public class Secret {
 
     public void incrementVersionIfNumeric() {
         try {
-            int existingVersion = Integer.parseInt(secretVersion);
-            setSecretVersion(String.valueOf(existingVersion + 1));
+            int existingVersion = Integer.parseInt(id.getVersion());
+            id.setVersion(String.valueOf(existingVersion + 1));
         } catch (NumberFormatException e) {
             // Preserve the existing version when it cannot be parsed as a number.
         }

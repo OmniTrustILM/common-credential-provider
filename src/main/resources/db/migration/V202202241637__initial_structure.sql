@@ -6,5 +6,5 @@ CREATE TABLE secret
     secret_content    VARCHAR      NOT NULL,
     vault_attributes  JSONB,
     secret_attributes JSONB,
-    CONSTRAINT pk_secret PRIMARY KEY (name, secret_type)
+    CONSTRAINT pk_secret PRIMARY KEY (name, secret_type, secret_version)
 );

@@ -10,6 +10,7 @@ import com.czertainly.api.model.connector.secrets.SecretResponseDto;
 import com.czertainly.api.model.connector.secrets.SecretType;
 import com.czertainly.api.model.connector.secrets.UpdateSecretRequestDto;
 import czertainly.common.credential.provider.dao.entity.Secret;
+import czertainly.common.credential.provider.dao.entity.SecretCompositeId;
 import czertainly.common.credential.provider.dao.repository.SecretRepository;
 import czertainly.common.credential.provider.service.SecretService;
 import czertainly.common.credential.provider.mapper.SecretMapper;
@@ -53,8 +54,20 @@ public class SecretServiceImpl implements SecretService {
         String name = request.getName();
         SecretType secretType = request.getType();
         log.debug("Getting content of secret {}/{}", name, secretType);
-        // Versioning is not supported by this provider, so the latest is always returned.
-        Secret entity = getSecretOrThrow(name, secretType);
+
+        Secret entity;
+        if (version != null && !version.isEmpty()) {
+            // Retrieve the specific version
+            entity = secretRepository.findByNameAndSecretTypeAndVersion(name, secretType, version)
+                    .orElseThrow(() -> new NotFoundException(Secret.class, formatSecretKey(name, secretType, version)));
+        } else {
+            // Retrieve the latest version
+            var allVersions = secretRepository.findByNameAndSecretTypeOrderByVersionDesc(name, secretType);
+            if (allVersions.isEmpty()) {
+                throw new NotFoundException(Secret.class, formatSecretKey(name, secretType));
+            }
+            entity = allVersions.getFirst(); // get the latest version from the ordered list
+        }
 
         SecretContentResponseDto response = SecretMapper.toContentResponse(entity);
         log.debug("Retrieved content of secret {}/{}", name, secretType);
@@ -67,15 +80,28 @@ public class SecretServiceImpl implements SecretService {
         String name = request.getName();
         SecretType secretType = request.getSecret().getType();
         log.debug("Updating secret {}/{}", name, secretType);
-        Secret entity = getSecretOrThrow(name, secretType);
 
-        entity.incrementVersionIfNumeric();
-        entity.setSecretContent(request.getSecret());
-        entity.setVaultAttributes(request.getVaultAttributes());
-        entity.setSecretAttributes(request.getSecretAttributes());
-        entity = secretRepository.save(entity);
+        // Get all versions to find the latest
+        var allVersions = secretRepository.findByNameAndSecretTypeOrderByVersionDesc(name, secretType);
+        if (allVersions.isEmpty()) {
+            throw new NotFoundException(Secret.class, formatSecretKey(name, secretType));
+        }
 
-        SecretResponseDto response = SecretMapper.toResponse(entity);
+        // Get the current latest version
+        Secret latestEntity = allVersions.getFirst();
+
+        // Create a new entity with an incremented version
+        Secret newEntity = Secret.builder()
+                .id(new SecretCompositeId(name, secretType, latestEntity.getId().getVersion()))
+                .secretContent(request.getSecret())
+                .vaultAttributes(request.getVaultAttributes())
+                .secretAttributes(request.getSecretAttributes())
+                .build();
+
+        newEntity.incrementVersionIfNumeric();
+        newEntity = secretRepository.save(newEntity);
+
+        SecretResponseDto response = SecretMapper.toResponse(newEntity);
         log.debug("Updated secret {}/{}", name, secretType);
         return response;
     }
@@ -89,7 +115,7 @@ public class SecretServiceImpl implements SecretService {
 
         long deleted = secretRepository.deleteByNameAndSecretType(name, secretType);
         if (deleted > 0) {
-            log.debug("Deleted secret {}/{}", name, secretType);
+            log.debug("Deleted {} versions of secret {}/{}", deleted, name, secretType);
             return;
         }
 
@@ -115,17 +141,17 @@ public class SecretServiceImpl implements SecretService {
     }
 
     private void ensureSecretDoesNotExist(String name, SecretType secretType) throws AlreadyExistException {
-        if (secretRepository.findByNameAndSecretType(name, secretType).isPresent()) {
+        var existingVersions = secretRepository.findByNameAndSecretTypeOrderByVersionDesc(name, secretType);
+        if (!existingVersions.isEmpty()) {
             throw new AlreadyExistException(Secret.class, formatSecretKey(name, secretType));
         }
     }
 
-    private Secret getSecretOrThrow(String name, SecretType secretType) throws NotFoundException {
-        return secretRepository.findByNameAndSecretType(name, secretType)
-                .orElseThrow(() -> new NotFoundException(Secret.class, formatSecretKey(name, secretType)));
-    }
-
     private String formatSecretKey(String name, SecretType secretType) {
         return name + "/" + secretType;
+    }
+
+    private String formatSecretKey(String name, SecretType secretType, String version) {
+        return name + "/" + secretType + "/" + version;
     }
 }

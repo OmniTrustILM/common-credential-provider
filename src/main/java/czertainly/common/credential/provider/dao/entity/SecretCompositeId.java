@@ -27,4 +27,7 @@ public class SecretCompositeId implements Serializable {
     @Column(name = "secret_type", nullable = false)
     @Enumerated(EnumType.STRING)
     private SecretType secretType;
+
+    @Column(name = "secret_version", nullable = false, updatable = false)
+    private String version;
 }
