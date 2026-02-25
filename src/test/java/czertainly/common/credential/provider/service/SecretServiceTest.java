@@ -14,6 +14,7 @@ import com.czertainly.api.model.connector.secrets.content.PrivateKeySecretConten
 import com.czertainly.api.model.connector.secrets.content.SecretContent;
 import czertainly.common.credential.provider.BuildInfoTestConfig;
 import czertainly.common.credential.provider.dao.repository.SecretRepository;
+import czertainly.common.credential.provider.util.SecretEncodingVersion;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -271,8 +272,8 @@ class SecretServiceTest {
                 "Database content should not contain plaintext password");
         Assertions.assertFalse(rawDatabaseContent.contains("testUser"),
                 "Database content should not contain plaintext username");
-        Assertions.assertTrue(rawDatabaseContent.startsWith("v1|"),
-                "Encrypted content should start with version prefix 'v1|'");
+        Assertions.assertTrue(rawDatabaseContent.startsWith(SecretEncodingVersion.V1.getVersion()),
+                "Encrypted content should start with version prefix 'v1'");
     }
 
     // ========== Helper Methods ==========

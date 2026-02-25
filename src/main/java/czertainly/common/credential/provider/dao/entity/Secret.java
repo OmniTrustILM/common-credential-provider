@@ -2,7 +2,7 @@ package czertainly.common.credential.provider.dao.entity;
 
 import com.czertainly.api.model.client.attribute.RequestAttribute;
 import com.czertainly.api.model.connector.secrets.content.SecretContent;
-import czertainly.common.credential.provider.util.SecretContentEncryptionConverter;
+import czertainly.common.credential.provider.dao.converter.SecretContentEncryptionConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.EmbeddedId;

@@ -2,7 +2,7 @@ CREATE TABLE secret
 (
     name              VARCHAR(255) NOT NULL,
     secret_type       VARCHAR(255) NOT NULL,
-    secret_version    int          NOT NULL,
+    secret_version    INTEGER      NOT NULL,
     secret_content    VARCHAR      NOT NULL,
     vault_attributes  JSONB,
     secret_attributes JSONB,

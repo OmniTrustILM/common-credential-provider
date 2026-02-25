@@ -141,18 +141,15 @@ public class SecretsUtil {
      * @return encoded string
      */
     private static String encodeSecretStringV1(byte[] secret, byte[] salt, byte[] iv, int iterations) {
-        StringBuilder encoded = new StringBuilder();
-        encoded.append(SecretEncodingVersion.V1.getVersion());
-        encoded.append("|");
-        encoded.append(Base64.getEncoder().encodeToString(secret));
-        encoded.append("|");
-        encoded.append(Base64.getEncoder().encodeToString(salt));
-        encoded.append("|");
-        encoded.append(Base64.getEncoder().encodeToString(iv));
-        encoded.append("|");
-        encoded.append(iterations);
-
-        return encoded.toString();
+        return SecretEncodingVersion.V1.getVersion() +
+                "|" +
+                Base64.getEncoder().encodeToString(secret) +
+                "|" +
+                Base64.getEncoder().encodeToString(salt) +
+                "|" +
+                Base64.getEncoder().encodeToString(iv) +
+                "|" +
+                iterations;
     }
 
     private static byte[] decodeSaltFromSecretStringV1(String secret) {

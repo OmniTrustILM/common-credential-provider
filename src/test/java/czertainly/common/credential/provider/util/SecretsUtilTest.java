@@ -19,7 +19,7 @@ class SecretsUtilTest {
     void testEncodeSecret_ok() {
         String encodedSecret = secretsUtil.encryptAndEncodeSecretString(SECRET, SecretEncodingVersion.V1);
 
-        Assertions.assertEquals(encodedSecret.substring(0, 2), SecretEncodingVersion.V1.getVersion());
+        Assertions.assertEquals(SecretEncodingVersion.V1.getVersion(), encodedSecret.substring(0, 2));
     }
 
     @Test

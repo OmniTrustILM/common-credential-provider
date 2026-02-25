@@ -1,9 +1,11 @@
-package czertainly.common.credential.provider.util;
+package czertainly.common.credential.provider.dao.converter;
 
 import com.czertainly.api.model.connector.secrets.content.SecretContent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import czertainly.common.credential.provider.util.SecretEncodingVersion;
+import czertainly.common.credential.provider.util.SecretsUtil;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 import lombok.extern.slf4j.Slf4j;
@@ -31,8 +33,7 @@ public class SecretContentEncryptionConverter implements AttributeConverter<Secr
             String converted = mapper.writeValueAsString(data);
             return secretsUtil.encryptAndEncodeSecretString(converted, SecretEncodingVersion.V1);
         } catch (JsonProcessingException e) {
-            log.error("Error converting SecretContent to String", e);
-            return null;
+            throw new IllegalStateException("Error converting SecretContent to String", e);
         }
     }
 
@@ -44,9 +45,8 @@ public class SecretContentEncryptionConverter implements AttributeConverter<Secr
         try {
             String decrypted = secretsUtil.decodeAndDecryptSecretString(data, SecretEncodingVersion.V1);
             return mapper.readValue(decrypted, typeRef);
-        } catch (IOException e) {
-            log.error("Error converting String to SecretContent", e);
-            return null;
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Error converting String to SecretContent", e);
         }
     }
 }
