@@ -41,7 +41,7 @@ public class SecretContentEncryptionConverter implements AttributeConverter<Secr
         };
 
         try {
-            String decrypted = secretsUtil.decodeAndDecryptSecretString(data, SecretEncodingVersion.V1);
+            String decrypted = secretsUtil.decodeAndDecryptSecretString(data);
             return mapper.readValue(decrypted, typeRef);
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Error converting String to SecretContent", e);

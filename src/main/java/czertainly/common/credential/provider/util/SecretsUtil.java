@@ -53,9 +53,16 @@ public class SecretsUtil {
             return null;
         }
 
+        if (secretVersion == SecretEncodingVersion.V1) {
+            return encryptAndEncodeSecretStringV1(secret);
+        } else {
+            throw new IllegalArgumentException("Secret version not supported");
+        }
+    }
+
+    private String encryptAndEncodeSecretStringV1(String secret) {
         byte[] salt = generateRandomSalt();
         byte[] iv = generateRandomIV();
-
         byte[] encryptedSecret;
 
         try {
@@ -82,27 +89,23 @@ public class SecretsUtil {
             throw new IllegalStateException("Invalid algorithm parameters for " + AEAD_ALGORITHM, e);
         }
 
-        if (secretVersion == SecretEncodingVersion.V1) {
-            return encodeSecretStringV1(encryptedSecret, salt, iv, ITERATIONS);
-        } else {
-            throw new IllegalArgumentException("Secret version not supported");
-        }
-
+        return encodeSecretStringV1(encryptedSecret, salt, iv, ITERATIONS);
     }
 
-    public String decodeAndDecryptSecretString(String secret, SecretEncodingVersion secretVersion) {
-        byte[] salt;
-        byte[] iv;
-        int iterations;
-        byte[] encryptedSecret;
-        if (secretVersion == SecretEncodingVersion.V1) {
-            salt = decodeSaltFromSecretStringV1(secret);
-            iv = decodeIVFromSecretStringV1(secret);
-            iterations = getIterationsFromSecretStringV1(secret);
-            encryptedSecret = decodeEncryptedSecretFromSecretStringV1(secret);
+
+    public String decodeAndDecryptSecretString(String secret) {
+        if (isSecretStringV1(secret)) {
+            return decodeAndDecryptSecretStringV1(secret);
         } else {
             throw new IllegalArgumentException("Secret version not supported");
         }
+    }
+
+    private String decodeAndDecryptSecretStringV1(String secret) {
+        byte[] salt = decodeSaltFromSecretStringV1(secret);
+        byte[] iv = decodeIVFromSecretStringV1(secret);
+        int iterations = getIterationsFromSecretStringV1(secret);
+        byte[] encryptedSecret = decodeEncryptedSecretFromSecretStringV1(secret);
 
         try {
             // Derive key using PBKDF2
@@ -134,9 +137,9 @@ public class SecretsUtil {
      * Encodes the secret value into string
      * v1|secret|salt|iv|iterations
      *
-     * @param secret value to be encoded
-     * @param salt   used salt for key derivation
-     * @param iv     initialization vector for GCM
+     * @param secret     value to be encoded
+     * @param salt       used salt for key derivation
+     * @param iv         initialization vector for GCM
      * @param iterations number of iterations
      * @return encoded string
      */
@@ -190,16 +193,13 @@ public class SecretsUtil {
 
     private static boolean isSecretStringV1(String secret) {
         String[] parts = secret.split("\\|");
-        if (parts.length != 5) {
-            return false;
-        }
-        return parts[0].equals("v1");
+        return parts.length > 0 && parts[0].equals(SecretEncodingVersion.V1.getVersion());
     }
 
     /**
      * Derives an AES key from the password using PBKDF2
      *
-     * @param salt the salt for key derivation
+     * @param salt       the salt for key derivation
      * @param iterations the number of iterations for PBKDF2
      * @return the derived SecretKey
      */

@@ -16,10 +16,17 @@ import java.util.List;
 @Slf4j
 public class RequestAttributeListToStringConverter implements AttributeConverter<List<RequestAttribute>, String> {
 
+    private final TypeReference<List<RequestAttribute>> typeRef = new TypeReference<>() {
+    };
+
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Override
     public String convertToDatabaseColumn(List<RequestAttribute> data) {
+        if (data == null) {
+            return null;
+        }
+
         try {
             return mapper.writeValueAsString(data);
         } catch (JsonProcessingException e) {
@@ -29,8 +36,9 @@ public class RequestAttributeListToStringConverter implements AttributeConverter
 
     @Override
     public List<RequestAttribute> convertToEntityAttribute(String data) {
-        TypeReference<List<RequestAttribute>> typeRef = new TypeReference<>() {
-        };
+        if (data == null) {
+            return null;
+        }
 
         try {
             return mapper.readValue(data, typeRef);

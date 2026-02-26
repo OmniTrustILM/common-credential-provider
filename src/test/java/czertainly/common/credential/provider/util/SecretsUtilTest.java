@@ -87,7 +87,7 @@ class SecretsUtilTest {
         })
         void shouldEncryptAndDecryptVariousSecretTypes(String secret) {
             String encodedSecret = secretsUtil.encryptAndEncodeSecretString(secret, VERSION);
-            String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret, VERSION);
+            String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret);
 
             assertEquals(secret, decodedSecret,
                     "Decrypted secret should match original secret");
@@ -99,7 +99,7 @@ class SecretsUtilTest {
             String longSecret = "A".repeat(10000);
 
             String encodedSecret = secretsUtil.encryptAndEncodeSecretString(longSecret, VERSION);
-            String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret, VERSION);
+            String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret);
 
             assertEquals(longSecret, decodedSecret,
                     "Long secret should be encrypted and decrypted correctly");
@@ -115,8 +115,8 @@ class SecretsUtilTest {
                     "Two encryptions of same secret should produce different values due to random salt and IV");
 
             // Both should still decrypt to the same original value
-            String decodedSecret1 = secretsUtil.decodeAndDecryptSecretString(encodedSecret1, VERSION);
-            String decodedSecret2 = secretsUtil.decodeAndDecryptSecretString(encodedSecret2, VERSION);
+            String decodedSecret1 = secretsUtil.decodeAndDecryptSecretString(encodedSecret1);
+            String decodedSecret2 = secretsUtil.decodeAndDecryptSecretString(encodedSecret2);
 
             assertEquals(STANDARD_SECRET, decodedSecret1,
                     "First encrypted secret should decrypt to original");
@@ -134,7 +134,7 @@ class SecretsUtilTest {
         void shouldDecryptEncryptedSecret() {
             String encodedSecret = secretsUtil.encryptAndEncodeSecretString(STANDARD_SECRET, VERSION);
 
-            String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret, VERSION);
+            String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret);
 
             assertEquals(STANDARD_SECRET, decodedSecret,
                     "Decrypted secret should match original secret");
@@ -146,7 +146,7 @@ class SecretsUtilTest {
             String emptySecret = "";
             String encodedSecret = secretsUtil.encryptAndEncodeSecretString(emptySecret, VERSION);
 
-            String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret, VERSION);
+            String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret);
 
             assertEquals(emptySecret, decodedSecret,
                     "Empty string should be decrypted correctly");
@@ -186,32 +186,17 @@ class SecretsUtilTest {
         }
 
         @Test
-        @DisplayName("Should throw exception for invalid format")
-        void shouldThrowExceptionForInvalidFormat() {
-            String invalidSecret = "not|a|valid|secret";
-
-            IllegalArgumentException exception = assertThrows(
-                    IllegalArgumentException.class,
-                    () -> secretsUtil.decodeAndDecryptSecretString(invalidSecret, VERSION),
-                    "Should throw IllegalArgumentException for invalid format"
-            );
-
-            assertTrue(exception.getMessage().contains("Secret string is not in the correct format"),
-                    "Exception message should indicate invalid format");
-        }
-
-        @Test
         @DisplayName("Should throw exception for missing parts")
         void shouldThrowExceptionForMissingParts() {
             String invalidSecret = "v1|part1|part2";
 
             IllegalArgumentException exception = assertThrows(
                     IllegalArgumentException.class,
-                    () -> secretsUtil.decodeAndDecryptSecretString(invalidSecret, VERSION),
+                    () -> secretsUtil.decodeAndDecryptSecretString(invalidSecret),
                     "Should throw exception when secret has missing parts"
             );
 
-            assertTrue(exception.getMessage().contains("Secret string is not in the correct format"),
+            assertTrue(exception.getMessage().contains("Last unit does not have enough valid bits"),
                     "Exception message should indicate format error");
         }
 
@@ -222,11 +207,11 @@ class SecretsUtilTest {
 
             IllegalArgumentException exception = assertThrows(
                     IllegalArgumentException.class,
-                    () -> secretsUtil.decodeAndDecryptSecretString(invalidSecret, VERSION),
+                    () -> secretsUtil.decodeAndDecryptSecretString(invalidSecret),
                     "Should throw exception when secret has too many parts"
             );
 
-            assertTrue(exception.getMessage().contains("Secret string is not in the correct format"),
+            assertTrue(exception.getMessage().contains("Last unit does not have enough valid bits"),
                     "Exception message should indicate format error");
         }
 
@@ -237,11 +222,11 @@ class SecretsUtilTest {
 
             IllegalArgumentException exception = assertThrows(
                     IllegalArgumentException.class,
-                    () -> secretsUtil.decodeAndDecryptSecretString(invalidSecret, VERSION),
+                    () -> secretsUtil.decodeAndDecryptSecretString(invalidSecret),
                     "Should throw exception for unsupported version"
             );
 
-            assertTrue(exception.getMessage().contains("Secret string is not in the correct format"),
+            assertTrue(exception.getMessage().contains("Secret version not supported"),
                     "Exception message should indicate format error");
         }
 
@@ -252,7 +237,7 @@ class SecretsUtilTest {
 
             assertThrows(
                     IllegalArgumentException.class,
-                    () -> secretsUtil.decodeAndDecryptSecretString(invalidSecret, VERSION),
+                    () -> secretsUtil.decodeAndDecryptSecretString(invalidSecret),
                     "Should throw exception for invalid base64 encoding"
             );
         }
@@ -270,7 +255,7 @@ class SecretsUtilTest {
 
             IllegalStateException exception = assertThrows(
                     IllegalStateException.class,
-                    () -> secretsUtil.decodeAndDecryptSecretString(tamperedSecret, VERSION),
+                    () -> secretsUtil.decodeAndDecryptSecretString(tamperedSecret),
                     "Should throw exception when encrypted data is tampered"
             );
 
@@ -287,7 +272,7 @@ class SecretsUtilTest {
 
             IllegalStateException exception = assertThrows(
                     IllegalStateException.class,
-                    () -> secretsUtil.decodeAndDecryptSecretString(tamperedSecret, VERSION),
+                    () -> secretsUtil.decodeAndDecryptSecretString(tamperedSecret),
                     "Should throw exception when salt is tampered"
             );
 
@@ -304,7 +289,7 @@ class SecretsUtilTest {
 
             IllegalStateException exception = assertThrows(
                     IllegalStateException.class,
-                    () -> secretsUtil.decodeAndDecryptSecretString(tamperedSecret, VERSION),
+                    () -> secretsUtil.decodeAndDecryptSecretString(tamperedSecret),
                     "Should throw exception when IV is tampered"
             );
 
@@ -330,21 +315,6 @@ class SecretsUtilTest {
             assertTrue(exception.getMessage().contains("Secret version not supported"),
                     "Exception message should indicate unsupported version");
         }
-
-        @Test
-        @DisplayName("Should throw exception when decrypting with unsupported version")
-        void shouldThrowExceptionForUnsupportedDecryptionVersion() {
-            String encodedSecret = secretsUtil.encryptAndEncodeSecretString(STANDARD_SECRET, VERSION);
-
-            IllegalArgumentException exception = assertThrows(
-                    IllegalArgumentException.class,
-                    () -> secretsUtil.decodeAndDecryptSecretString(encodedSecret, null),
-                    "Should throw exception for null version during decryption"
-            );
-
-            assertTrue(exception.getMessage().contains("Secret version not supported"),
-                    "Exception message should indicate unsupported version");
-        }
     }
 
     @Nested
@@ -361,11 +331,25 @@ class SecretsUtilTest {
 
             NumberFormatException exception = assertThrows(
                     NumberFormatException.class,
-                    () -> secretsUtil.decodeAndDecryptSecretString(invalidSecret, VERSION),
+                    () -> secretsUtil.decodeAndDecryptSecretString(invalidSecret),
                     "Should throw exception when iterations is not an integer"
             );
 
             assertNotNull(exception, "Exception should be thrown for invalid iterations");
+        }
+
+        @ParameterizedTest
+        @DisplayName("Should throw exception for non-positive iterations")
+        @ValueSource(ints = {0, -1})
+        void shouldThrowExceptionForNonPositiveIterations(int iterations) {
+            String encodedSecret = secretsUtil.encryptAndEncodeSecretString(STANDARD_SECRET, VERSION);
+            String modifiedSecret = replaceIterations(encodedSecret, iterations);
+
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> secretsUtil.decodeAndDecryptSecretString(modifiedSecret),
+                    "Should throw exception when iterations is non-positive"
+            );
         }
 
         @Test
@@ -373,7 +357,7 @@ class SecretsUtilTest {
         void shouldThrowExceptionForNullSecretString() {
             assertThrows(
                     NullPointerException.class,
-                    () -> secretsUtil.decodeAndDecryptSecretString(null, VERSION),
+                    () -> secretsUtil.decodeAndDecryptSecretString(null),
                     "Should throw exception when secret string is null"
             );
         }
@@ -389,7 +373,7 @@ class SecretsUtilTest {
             String secretWithPipe = "secret|with|pipes";
 
             String encodedSecret = secretsUtil.encryptAndEncodeSecretString(secretWithPipe, VERSION);
-            String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret, VERSION);
+            String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret);
 
             assertEquals(secretWithPipe, decodedSecret,
                     "Secret containing pipe characters should be encrypted and decrypted correctly");
@@ -403,7 +387,7 @@ class SecretsUtilTest {
             String encodedSecret = secretsUtil.encryptAndEncodeSecretString(veryLongSecret, VERSION);
             assertNotNull(encodedSecret, "Encoded secret should not be null");
 
-            String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret, VERSION);
+            String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret);
             assertEquals(veryLongSecret, decodedSecret,
                     "Very long secret should be encrypted and decrypted correctly");
         }
@@ -414,7 +398,7 @@ class SecretsUtilTest {
             String secretWithNewlines = "line1\nline2\nline3\ttab";
 
             String encodedSecret = secretsUtil.encryptAndEncodeSecretString(secretWithNewlines, VERSION);
-            String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret, VERSION);
+            String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret);
 
             assertEquals(secretWithNewlines, decodedSecret,
                     "Secret with newlines should be encrypted and decrypted correctly");
@@ -427,7 +411,7 @@ class SecretsUtilTest {
 
             for (int i = 0; i < 5; i++) {
                 String encoded = secretsUtil.encryptAndEncodeSecretString(original, VERSION);
-                String decoded = secretsUtil.decodeAndDecryptSecretString(encoded, VERSION);
+                String decoded = secretsUtil.decodeAndDecryptSecretString(encoded);
                 assertEquals(original, decoded,
                         "Cycle " + (i + 1) + " should maintain consistency");
             }
@@ -439,7 +423,7 @@ class SecretsUtilTest {
             String secretWithSpaces = "  leading and trailing spaces  ";
 
             String encodedSecret = secretsUtil.encryptAndEncodeSecretString(secretWithSpaces, VERSION);
-            String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret, VERSION);
+            String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret);
 
             assertEquals(secretWithSpaces, decodedSecret,
                     "Exact content with spaces should be preserved");
@@ -513,6 +497,12 @@ class SecretsUtilTest {
     private String tamperPart(String encodedSecret, int partIndex, byte[] tamperedData) {
         String[] parts = encodedSecret.split("\\|");
         parts[partIndex] = Base64.getEncoder().encodeToString(tamperedData);
+        return String.join("|", parts);
+    }
+
+    private String replaceIterations(String encodedSecret, int iterations) {
+        String[] parts = encodedSecret.split("\\|");
+        parts[4] = String.valueOf(iterations);
         return String.join("|", parts);
     }
 }
