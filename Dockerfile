@@ -19,6 +19,10 @@ COPY --from=build /home/app/target/*.jar /opt/czertainly/app.jar
 
 WORKDIR /opt/czertainly
 
+ENV JDBC_URL=
+ENV JDBC_USERNAME=
+ENV JDBC_PASSWORD=
+ENV DB_SCHEMA=common_secret
 ENV PORT=8080
 ENV JAVA_OPTS=
 

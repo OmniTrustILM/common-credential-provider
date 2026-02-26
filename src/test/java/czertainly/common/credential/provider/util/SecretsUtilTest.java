@@ -24,7 +24,7 @@ class SecretsUtilTest {
      * - Format validation and consistency
      * - Tampering detection
      * - Unsupported version handling
-     * - Edge cases (special chars, unicode, long secrets, etc.)
+     * - Edge cases (special chars, Unicode, long secrets, etc.)
      */
 
     // ==================== Test Constants ====================
