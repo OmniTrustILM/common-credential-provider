@@ -39,7 +39,7 @@ class RequestAttributeListToStringConverterTest {
     // ========== convertToDatabaseColumn Tests ==========
 
     @ParameterizedTest
-    @MethodSource("databaseColumnCases")
+    @MethodSource("databaseColumnAndRoundTripCases")
     @DisplayName("convertToDatabaseColumn should handle null, empty, and populated lists")
     void testConvertToDatabaseColumnCases(List<RequestAttribute> input, boolean expectNull, List<String> expectedNames) throws JsonProcessingException {
         String result = converter.convertToDatabaseColumn(input);
@@ -89,7 +89,7 @@ class RequestAttributeListToStringConverterTest {
     // ========== Round-trip Conversion Tests ==========
 
     @ParameterizedTest
-    @MethodSource("roundTripCases")
+    @MethodSource("databaseColumnAndRoundTripCases")
     @DisplayName("Round-trip conversion should preserve null, empty, and populated lists")
     void testRoundTripConversionCases(List<RequestAttribute> input, boolean expectNull, List<String> expectedNames) {
         String dbColumn = converter.convertToDatabaseColumn(input);
@@ -109,7 +109,7 @@ class RequestAttributeListToStringConverterTest {
         assertAttributeNames(result, expectedNames.toArray(new String[0]));
     }
 
-    private static Stream<Arguments> databaseColumnCases() {
+    private static Stream<Arguments> databaseColumnAndRoundTripCases() {
         RequestAttributeV2 attribute1 = buildAttribute(ATTRIBUTE1_UUID, "testAttribute", "testValue");
         RequestAttributeV2 attribute2 = buildAttribute(ATTRIBUTE1_UUID, "attribute1", "value1");
         RequestAttributeV2 attribute3 = buildAttribute(ATTRIBUTE2_UUID, "attribute2", "value2");
@@ -134,19 +134,6 @@ class RequestAttributeListToStringConverterTest {
                 Arguments.of("[]", false, List.of()),
                 Arguments.of(singleJson, false, List.of("testAttribute")),
                 Arguments.of(multipleJson, false, List.of("attribute1", "attribute2"))
-        );
-    }
-
-    private static Stream<Arguments> roundTripCases() {
-        RequestAttributeV2 attribute1 = buildAttribute(ATTRIBUTE1_UUID, "testAttribute", "testValue");
-        RequestAttributeV2 attribute2 = buildAttribute(ATTRIBUTE1_UUID, "attribute1", "value1");
-        RequestAttributeV2 attribute3 = buildAttribute(ATTRIBUTE2_UUID, "attribute2", "value2");
-
-        return Stream.of(
-                Arguments.of(null, true, List.of()),
-                Arguments.of(new ArrayList<RequestAttribute>(), false, List.of()),
-                Arguments.of(List.of(attribute1), false, List.of("testAttribute")),
-                Arguments.of(List.of(attribute2, attribute3), false, List.of("attribute1", "attribute2"))
         );
     }
 
