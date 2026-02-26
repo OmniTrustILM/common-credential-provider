@@ -89,18 +89,15 @@ public class SecretServiceImpl implements SecretService {
         SecretType secretType = request.getSecret().getType();
         log.debug("Updating secret {}/{}", name, secretType);
 
-        // Get all versions to find the latest
-        var allVersions = secretRepository.findByNameAndSecretTypeOrderByVersionDesc(name, secretType);
-        if (allVersions.isEmpty()) {
-            throw new NotFoundException(Secret.class, formatSecretKey(name, secretType));
-        }
-
-        // Get the current latest version
-        Secret latestEntity = allVersions.getFirst();
+        // Get the latest version with pessimistic locking (SELECT FOR UPDATE) to prevent race conditions.
+        // This ensures that between reading the latest version and creating the new version,
+        // no other transaction can create a duplicate secret with the same name, secret type and version.
+        Secret latestSecret = secretRepository.findLatestVersionForUpdate(name, secretType)
+                .orElseThrow(() -> new NotFoundException(Secret.class, formatSecretKey(name, secretType)));
 
         // Create a new entity with an incremented version
         Secret newEntity = Secret.builder()
-                .id(new SecretCompositeId(name, secretType, latestEntity.getId().getVersion()))
+                .id(new SecretCompositeId(name, secretType, latestSecret.getId().getVersion()))
                 .secretContent(request.getSecret())
                 .vaultAttributes(request.getVaultAttributes())
                 .secretAttributes(request.getSecretAttributes())
