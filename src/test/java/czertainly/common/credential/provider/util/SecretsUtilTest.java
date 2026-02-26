@@ -5,12 +5,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 
 import java.util.Base64;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -185,61 +188,22 @@ class SecretsUtilTest {
                     "Iterations part should be a valid integer");
         }
 
-        @Test
-        @DisplayName("Should throw exception for missing parts")
-        void shouldThrowExceptionForMissingParts() {
-            String invalidSecret = "v1|part1|part2";
-
-            IllegalArgumentException exception = assertThrows(
-                    IllegalArgumentException.class,
+        @ParameterizedTest(name = "Should reject invalid format case {index}")
+        @MethodSource("czertainly.common.credential.provider.util.SecretsUtilTest#invalidFormatSecrets")
+        void shouldThrowExceptionForInvalidFormat(String invalidSecret,
+                                                  Class<? extends Throwable> expectedException,
+                                                  String messageContains) {
+            Throwable exception = assertThrows(
+                    expectedException,
                     () -> secretsUtil.decodeAndDecryptSecretString(invalidSecret),
-                    "Should throw exception when secret has missing parts"
+                    "Should throw exception for invalid secret format"
             );
 
-            assertTrue(exception.getMessage().contains("Secret version not supported"),
-                    "Exception message should indicate format error");
-        }
-
-        @Test
-        @DisplayName("Should throw exception for too many parts")
-        void shouldThrowExceptionForTooManyParts() {
-            String invalidSecret = "v1|part1|part2|part3|part4|part5|part6";
-
-            IllegalArgumentException exception = assertThrows(
-                    IllegalArgumentException.class,
-                    () -> secretsUtil.decodeAndDecryptSecretString(invalidSecret),
-                    "Should throw exception when secret has too many parts"
-            );
-
-            assertTrue(exception.getMessage().contains("Secret version not supported"),
-                    "Exception message should indicate format error");
-        }
-
-        @Test
-        @DisplayName("Should throw exception for wrong version")
-        void shouldThrowExceptionForWrongVersion() {
-            String invalidSecret = "v2|part1|part2|part3|part4";
-
-            IllegalArgumentException exception = assertThrows(
-                    IllegalArgumentException.class,
-                    () -> secretsUtil.decodeAndDecryptSecretString(invalidSecret),
-                    "Should throw exception for unsupported version"
-            );
-
-            assertTrue(exception.getMessage().contains("Secret version not supported"),
-                    "Exception message should indicate format error");
-        }
-
-        @Test
-        @DisplayName("Should throw exception for invalid base64 encoding")
-        void shouldThrowExceptionForInvalidBase64() {
-            String invalidSecret = "v1|notBase64!@#|notBase64!@#|notBase64!@#|65536";
-
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () -> secretsUtil.decodeAndDecryptSecretString(invalidSecret),
-                    "Should throw exception for invalid base64 encoding"
-            );
+            if (messageContains != null) {
+                assertNotNull(exception.getMessage(), "Exception message should not be null");
+                assertTrue(exception.getMessage().contains(messageContains),
+                        "Exception message should indicate format error");
+            }
         }
     }
 
@@ -247,50 +211,16 @@ class SecretsUtilTest {
     @DisplayName("Tampering Detection Tests")
     class TamperingDetectionTests {
 
-        @Test
-        @DisplayName("Should detect tampered encrypted data")
-        void shouldDetectTamperedEncryptedData() {
+        @ParameterizedTest(name = "Should detect tampering of {0}")
+        @MethodSource("czertainly.common.credential.provider.util.SecretsUtilTest#tamperedSecrets")
+        void shouldDetectTampering(String tamperedPartLabel, int partIndex, byte[] tamperedData) {
             String encodedSecret = secretsUtil.encryptAndEncodeSecretString(STANDARD_SECRET, VERSION);
-            String tamperedSecret = tamperPart(encodedSecret, 1, "tampered data".getBytes());
+            String tamperedSecret = tamperPart(encodedSecret, partIndex, tamperedData);
 
             IllegalStateException exception = assertThrows(
                     IllegalStateException.class,
                     () -> secretsUtil.decodeAndDecryptSecretString(tamperedSecret),
-                    "Should throw exception when encrypted data is tampered"
-            );
-
-            assertTrue(exception.getMessage().contains("Bad padding") ||
-                            exception.getMessage().contains("corrupted or tampered"),
-                    "Exception message should indicate data corruption or tampering");
-        }
-
-        @Test
-        @DisplayName("Should detect tampered salt")
-        void shouldDetectTamperedSalt() {
-            String encodedSecret = secretsUtil.encryptAndEncodeSecretString(STANDARD_SECRET, VERSION);
-            String tamperedSecret = tamperPart(encodedSecret, 2, new byte[SALT_SIZE_BYTES]);
-
-            IllegalStateException exception = assertThrows(
-                    IllegalStateException.class,
-                    () -> secretsUtil.decodeAndDecryptSecretString(tamperedSecret),
-                    "Should throw exception when salt is tampered"
-            );
-
-            assertTrue(exception.getMessage().contains("Bad padding") ||
-                            exception.getMessage().contains("corrupted or tampered"),
-                    "Exception message should indicate data corruption or tampering");
-        }
-
-        @Test
-        @DisplayName("Should detect tampered IV")
-        void shouldDetectTamperedIV() {
-            String encodedSecret = secretsUtil.encryptAndEncodeSecretString(STANDARD_SECRET, VERSION);
-            String tamperedSecret = tamperPart(encodedSecret, 3, new byte[IV_SIZE_BYTES]);
-
-            IllegalStateException exception = assertThrows(
-                    IllegalStateException.class,
-                    () -> secretsUtil.decodeAndDecryptSecretString(tamperedSecret),
-                    "Should throw exception when IV is tampered"
+                    "Should throw exception when " + tamperedPartLabel + " is tampered"
             );
 
             assertTrue(exception.getMessage().contains("Bad padding") ||
@@ -367,16 +297,14 @@ class SecretsUtilTest {
     @DisplayName("Edge Cases Tests")
     class EdgeCasesTests {
 
-        @Test
-        @DisplayName("Should handle secret with pipe character")
-        void shouldHandleSecretWithPipeCharacter() {
-            String secretWithPipe = "secret|with|pipes";
-
-            String encodedSecret = secretsUtil.encryptAndEncodeSecretString(secretWithPipe, VERSION);
+        @ParameterizedTest(name = "Should handle edge case secret {index}")
+        @MethodSource("czertainly.common.credential.provider.util.SecretsUtilTest#edgeCaseSecrets")
+        void shouldHandleEdgeCaseSecrets(String secret) {
+            String encodedSecret = secretsUtil.encryptAndEncodeSecretString(secret, VERSION);
             String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret);
 
-            assertEquals(secretWithPipe, decodedSecret,
-                    "Secret containing pipe characters should be encrypted and decrypted correctly");
+            assertEquals(secret, decodedSecret,
+                    "Edge case secret should be encrypted and decrypted correctly");
         }
 
         @Test
@@ -393,18 +321,6 @@ class SecretsUtilTest {
         }
 
         @Test
-        @DisplayName("Should handle secret with newlines and special formatting")
-        void shouldHandleSecretWithNewlines() {
-            String secretWithNewlines = "line1\nline2\nline3\ttab";
-
-            String encodedSecret = secretsUtil.encryptAndEncodeSecretString(secretWithNewlines, VERSION);
-            String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret);
-
-            assertEquals(secretWithNewlines, decodedSecret,
-                    "Secret with newlines should be encrypted and decrypted correctly");
-        }
-
-        @Test
         @DisplayName("Should maintain consistency across multiple encryption/decryption cycles")
         void shouldMaintainConsistencyAcrossMultipleCycles() {
             String original = STANDARD_SECRET;
@@ -415,18 +331,6 @@ class SecretsUtilTest {
                 assertEquals(original, decoded,
                         "Cycle " + (i + 1) + " should maintain consistency");
             }
-        }
-
-        @Test
-        @DisplayName("Should preserve exact content of secret including leading/trailing spaces")
-        void shouldPreserveExactContent() {
-            String secretWithSpaces = "  leading and trailing spaces  ";
-
-            String encodedSecret = secretsUtil.encryptAndEncodeSecretString(secretWithSpaces, VERSION);
-            String decodedSecret = secretsUtil.decodeAndDecryptSecretString(encodedSecret);
-
-            assertEquals(secretWithSpaces, decodedSecret,
-                    "Exact content with spaces should be preserved");
         }
     }
 
@@ -484,6 +388,35 @@ class SecretsUtilTest {
     }
 
     // ==================== Helper Methods ====================
+
+    private static Stream<Arguments> invalidFormatSecrets() {
+        return Stream.of(
+                Arguments.of("v1|part1|part2", IllegalArgumentException.class,
+                        "Secret version not supported"),
+                Arguments.of("v1|part1|part2|part3|part4|part5|part6", IllegalArgumentException.class,
+                        "Secret version not supported"),
+                Arguments.of("v2|part1|part2|part3|part4", IllegalArgumentException.class,
+                        "Secret version not supported"),
+                Arguments.of("v1|notBase64!@#|notBase64!@#|notBase64!@#|65536",
+                        IllegalArgumentException.class, null)
+        );
+    }
+
+    private static Stream<Arguments> tamperedSecrets() {
+        return Stream.of(
+                Arguments.of("encrypted data", 1, "tampered data".getBytes()),
+                Arguments.of("salt", 2, new byte[SALT_SIZE_BYTES]),
+                Arguments.of("IV", 3, new byte[IV_SIZE_BYTES])
+        );
+    }
+
+    private static Stream<Arguments> edgeCaseSecrets() {
+        return Stream.of(
+                Arguments.of("secret|with|pipes"),
+                Arguments.of("line1\nline2\nline3\ttab"),
+                Arguments.of("  leading and trailing spaces  ")
+        );
+    }
 
     /**
      * Tampers with a specific part of an encoded secret for testing purposes.
