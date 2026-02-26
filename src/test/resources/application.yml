@@ -18,6 +18,7 @@ spring:
   flyway:
     enabled: false
   jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: create-drop
     properties:
