@@ -102,10 +102,18 @@ public class SecretsUtil {
     }
 
     private String decodeAndDecryptSecretStringV1(String secret) {
-        byte[] salt = decodeSaltFromSecretStringV1(secret);
-        byte[] iv = decodeIVFromSecretStringV1(secret);
-        int iterations = getIterationsFromSecretStringV1(secret);
-        byte[] encryptedSecret = decodeEncryptedSecretFromSecretStringV1(secret);
+        String[] parts = secret.split("\\|");
+        if (parts.length != 5) {
+            throw new IllegalArgumentException("Secret string is not in the correct format");
+        }
+        byte[] encryptedSecret = Base64.getDecoder().decode(parts[1]);
+        byte[] salt = Base64.getDecoder().decode(parts[2]);
+        byte[] iv = Base64.getDecoder().decode(parts[3]);
+        int iterations = Integer.parseInt(parts[4]);
+
+        if (iterations <= 0) {
+            throw new IllegalArgumentException("Invalid iterations value: " + iterations);
+        }
 
         try {
             // Derive key using PBKDF2
@@ -155,45 +163,9 @@ public class SecretsUtil {
                 iterations;
     }
 
-    private static byte[] decodeSaltFromSecretStringV1(String secret) {
-        if (isSecretStringV1(secret)) {
-            String[] parts = secret.split("\\|");
-            return Base64.getDecoder().decode(parts[2]);
-        } else {
-            throw new IllegalArgumentException("Secret string is not in the correct format");
-        }
-    }
-
-    private static byte[] decodeIVFromSecretStringV1(String secret) {
-        if (isSecretStringV1(secret)) {
-            String[] parts = secret.split("\\|");
-            return Base64.getDecoder().decode(parts[3]);
-        } else {
-            throw new IllegalArgumentException("Secret string is not in the correct format");
-        }
-    }
-
-    private static int getIterationsFromSecretStringV1(String secret) {
-        if (isSecretStringV1(secret)) {
-            String[] parts = secret.split("\\|");
-            return Integer.parseInt(parts[4]);
-        } else {
-            throw new IllegalArgumentException("Secret string is not in the correct format");
-        }
-    }
-
-    private static byte[] decodeEncryptedSecretFromSecretStringV1(String secret) {
-        if (isSecretStringV1(secret)) {
-            String[] parts = secret.split("\\|");
-            return Base64.getDecoder().decode(parts[1]);
-        } else {
-            throw new IllegalArgumentException("Secret string is not in the correct format");
-        }
-    }
-
     private static boolean isSecretStringV1(String secret) {
         String[] parts = secret.split("\\|");
-        return parts.length > 0 && parts[0].equals(SecretEncodingVersion.V1.getVersion());
+        return parts.length == 5 && parts[0].equals(SecretEncodingVersion.V1.getVersion());
     }
 
     /**

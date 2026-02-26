@@ -196,7 +196,7 @@ class SecretsUtilTest {
                     "Should throw exception when secret has missing parts"
             );
 
-            assertTrue(exception.getMessage().contains("Last unit does not have enough valid bits"),
+            assertTrue(exception.getMessage().contains("Secret version not supported"),
                     "Exception message should indicate format error");
         }
 
@@ -211,7 +211,7 @@ class SecretsUtilTest {
                     "Should throw exception when secret has too many parts"
             );
 
-            assertTrue(exception.getMessage().contains("Last unit does not have enough valid bits"),
+            assertTrue(exception.getMessage().contains("Secret version not supported"),
                     "Exception message should indicate format error");
         }
 
