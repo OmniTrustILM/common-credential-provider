@@ -32,7 +32,7 @@ public final class Secret {
     @EmbeddedId
     private SecretCompositeId id;
 
-    @Column(name = "secret_content", nullable = false, length = 65535)
+    @Column(name = "secret_content", nullable = false)
     @Convert(converter = SecretContentEncryptionConverter.class)
     private SecretContent secretContent; // encrypted
 
