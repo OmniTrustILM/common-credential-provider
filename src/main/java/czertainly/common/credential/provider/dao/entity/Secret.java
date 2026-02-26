@@ -2,6 +2,7 @@ package czertainly.common.credential.provider.dao.entity;
 
 import com.czertainly.api.model.client.attribute.RequestAttribute;
 import com.czertainly.api.model.connector.secrets.content.SecretContent;
+import czertainly.common.credential.provider.dao.converter.RequestAttributeListToStringConverter;
 import czertainly.common.credential.provider.dao.converter.SecretContentEncryptionConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -14,8 +15,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.util.List;
@@ -37,12 +36,12 @@ public final class Secret {
     @Convert(converter = SecretContentEncryptionConverter.class)
     private SecretContent secretContent; // encrypted
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "vault_attributes", columnDefinition = "jsonb")
+    @Column(name = "vault_attributes")
+    @Convert(converter = RequestAttributeListToStringConverter.class)
     private List<RequestAttribute> vaultAttributes;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "secret_attributes", columnDefinition = "jsonb")
+    @Column(name = "secret_attributes")
+    @Convert(converter = RequestAttributeListToStringConverter.class)
     private List<RequestAttribute> secretAttributes;
 
     // No metadata. We don't need them.

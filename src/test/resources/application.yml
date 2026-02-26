@@ -13,12 +13,12 @@ management:
 
 spring:
   datasource:
-    url: jdbc:tc:postgresql:17-alpine:///common_secret-test
-    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    url: jdbc:hsqldb:mem:testdb
+    driver-class-name: org.hsqldb.jdbc.JDBCDriver
   flyway:
     enabled: false
   jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    database-platform: org.hibernate.dialect.HSQLDialect
     hibernate:
       ddl-auto: create-drop
     properties:
