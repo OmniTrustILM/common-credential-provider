@@ -19,6 +19,7 @@ COPY --from=build /home/app/target/*.jar /opt/czertainly/app.jar
 
 WORKDIR /opt/czertainly
 
+ENV DB_SCHEMA=common_secret
 ENV PORT=8080
 ENV JAVA_OPTS=
 
