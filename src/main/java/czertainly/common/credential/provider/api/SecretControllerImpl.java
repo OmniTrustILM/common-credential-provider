@@ -12,6 +12,8 @@ import com.czertainly.api.model.connector.secrets.SecretType;
 import com.czertainly.api.model.connector.secrets.UpdateSecretRequestDto;
 import czertainly.common.credential.provider.service.SecretService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.WebDataBinder;
+import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -20,6 +22,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/v1/secretProvider/secrets")
 public class SecretControllerImpl implements SecretController {
+
+
+    @InitBinder
+    public void initBinder(final WebDataBinder webdataBinder) {
+        webdataBinder.registerCustomEditor(SecretType.class, new SecretTypeConverter());
+    }
+
+
     private final SecretService secretService;
 
     @Autowired
