@@ -12,7 +12,7 @@ import java.util.List;
 public class VaultControllerImpl implements VaultController {
     @Override
     public void checkVaultConnection(List<RequestAttribute> attributes) throws NotFoundException {
-
+        // since vaults are not implemented in this provider, connection check is not required
     }
 
     @Override

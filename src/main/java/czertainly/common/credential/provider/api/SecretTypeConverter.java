@@ -2,7 +2,6 @@ package czertainly.common.credential.provider.api;
 
 import com.czertainly.api.model.connector.secrets.SecretType;
 
-import java.beans.PropertyEditor;
 import java.beans.PropertyEditorSupport;
 
 public class SecretTypeConverter extends PropertyEditorSupport {

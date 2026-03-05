@@ -15,7 +15,6 @@ import com.czertainly.api.model.connector.secrets.content.SecretContent;
 import czertainly.common.credential.provider.BuildInfoTestConfig;
 import czertainly.common.credential.provider.api.SecretControllerImpl;
 import czertainly.common.credential.provider.dao.repository.SecretRepository;
-import czertainly.common.credential.provider.service.impl.SecretServiceImpl;
 import czertainly.common.credential.provider.util.SecretEncodingVersion;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -302,8 +301,6 @@ class SecretServiceTest {
         Assertions.assertEquals(expectedType, response.getType(), "Secret type mismatch");
         Assertions.assertEquals(expectedVersion, response.getVersion(), "Secret version mismatch");
     }
-
-
 
     @Test
     void testSecretControllerBind() {
