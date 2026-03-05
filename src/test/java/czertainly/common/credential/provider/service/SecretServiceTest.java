@@ -13,7 +13,9 @@ import com.czertainly.api.model.connector.secrets.content.KeyValueSecretContent;
 import com.czertainly.api.model.connector.secrets.content.PrivateKeySecretContent;
 import com.czertainly.api.model.connector.secrets.content.SecretContent;
 import czertainly.common.credential.provider.BuildInfoTestConfig;
+import czertainly.common.credential.provider.api.SecretControllerImpl;
 import czertainly.common.credential.provider.dao.repository.SecretRepository;
+import czertainly.common.credential.provider.service.impl.SecretServiceImpl;
 import czertainly.common.credential.provider.util.SecretEncodingVersion;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +25,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.web.bind.WebDataBinder;
 
 import java.util.List;
 import java.util.Map;
@@ -299,4 +302,13 @@ class SecretServiceTest {
         Assertions.assertEquals(expectedType, response.getType(), "Secret type mismatch");
         Assertions.assertEquals(expectedVersion, response.getVersion(), "Secret version mismatch");
     }
+
+
+
+    @Test
+    void testSecretControllerBind() {
+        SecretControllerImpl secretController = new SecretControllerImpl(secretService);
+        Assertions.assertDoesNotThrow(() -> secretController.initBinder(new WebDataBinder(secretController)));
+    }
+
 }
