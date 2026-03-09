@@ -58,8 +58,7 @@ public class ProblemDetailsHandlingAdvice extends ResponseEntityExceptionHandler
         LOG.error("Resource not found: {}", ex.getMessage(), ex);
         return ProblemDetailExtended.fromErrorCode(ErrorCode.RESOURCE_NOT_FOUND, ex.getMessage(), null, null);
     }
-
-
+    
     @ExceptionHandler(UnsupportedOperationException.class)
     public ProblemDetail handleNotSupportedException(UnsupportedOperationException ex) {
         LOG.error("Not Supported error occurred: {}", ex.getMessage(), ex);
