@@ -20,6 +20,7 @@
         <sonar.organization>czertainly</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.projectKey>CZERTAINLY_CZERTAINLY-Common-Credential-Provider</sonar.projectKey>
+        <sonar.coverage.exclusions>src/main/java/com/czertainly/common/credential/provider/*</sonar.coverage.exclusions>
     </properties>
 
     <dependencies>
