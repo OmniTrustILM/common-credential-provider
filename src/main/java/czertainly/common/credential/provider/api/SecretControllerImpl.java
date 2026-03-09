@@ -10,6 +10,7 @@ import com.czertainly.api.model.connector.secrets.SecretRequestDto;
 import com.czertainly.api.model.connector.secrets.SecretResponseDto;
 import com.czertainly.api.model.connector.secrets.SecretType;
 import com.czertainly.api.model.connector.secrets.UpdateSecretRequestDto;
+import czertainly.common.credential.provider.ConnectorV2Api;
 import czertainly.common.credential.provider.service.SecretService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +20,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/v1/secretProvider/secrets")
+@ConnectorV2Api
 public class SecretControllerImpl implements SecretController {
     private final SecretService secretService;
 

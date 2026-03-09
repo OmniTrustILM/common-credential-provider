@@ -2,6 +2,7 @@ package czertainly.common.credential.provider.api.v2;
 
 import com.czertainly.api.interfaces.connector.common.v2.InfoController;
 import com.czertainly.api.model.client.connector.v2.*;
+import czertainly.common.credential.provider.ConnectorV2Api;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.web.bind.annotation.RestController;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController("infoControllerV2")
+@ConnectorV2Api
 public class InfoControllerImpl implements InfoController {
 
     private final BuildProperties buildProperties;
