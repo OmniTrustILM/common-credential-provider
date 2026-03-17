@@ -1,6 +1,7 @@
 package czertainly.common.credential.provider.api;
 
 
+import com.czertainly.api.exception.NotFoundException;
 import com.czertainly.api.interfaces.connector.secrets.VaultController;
 import com.czertainly.api.model.client.attribute.RequestAttribute;
 import com.czertainly.api.model.common.attribute.common.BaseAttribute;
@@ -20,6 +21,11 @@ public class VaultControllerImpl implements VaultController {
 
     @Override
     public List<BaseAttribute> listVaultAttributes() {
+        return List.of();
+    }
+
+    @Override
+    public List<BaseAttribute> listVaultProfileAttributes(List<RequestAttribute> attributes) {
         return List.of();
     }
 }
