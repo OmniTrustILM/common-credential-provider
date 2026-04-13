@@ -4,14 +4,7 @@ import com.czertainly.api.exception.AlreadyExistException;
 import com.czertainly.api.exception.NotFoundException;
 import com.czertainly.api.model.common.attribute.common.BaseAttribute;
 import com.czertainly.api.model.connector.secrets.*;
-import com.czertainly.api.model.connector.secrets.content.ApiKeySecretContent;
-import com.czertainly.api.model.connector.secrets.content.BasicAuthSecretContent;
-import com.czertainly.api.model.connector.secrets.content.JwtTokenSecretContent;
-import com.czertainly.api.model.connector.secrets.content.KeyStoreSecretContent;
-import com.czertainly.api.model.connector.secrets.content.KeyStoreType;
-import com.czertainly.api.model.connector.secrets.content.KeyValueSecretContent;
-import com.czertainly.api.model.connector.secrets.content.PrivateKeySecretContent;
-import com.czertainly.api.model.connector.secrets.content.SecretContent;
+import com.czertainly.api.model.connector.secrets.content.*;
 import czertainly.common.credential.provider.BuildInfoTestConfig;
 import czertainly.common.credential.provider.api.SecretControllerImpl;
 import czertainly.common.credential.provider.dao.repository.SecretRepository;
@@ -190,6 +183,30 @@ class SecretServiceTest {
         Assertions.assertEquals("1", v1.getVersion());
         Assertions.assertEquals("2", v2.getVersion());
         Assertions.assertEquals("3", v3.getVersion());
+    }
+
+    @Test
+    void testUpdateSecret_WithSameContent_ShouldNotIncrementVersion() throws AlreadyExistException, NotFoundException {
+        testUpdateWithSameContent(new PrivateKeySecretContent("key"), "testSecret1");
+        testUpdateWithSameContent(new BasicAuthSecretContent("testUser", "testPassword"), "testSecret2");
+        testUpdateWithSameContent(new KeyValueSecretContent(Map.of("key", "value")), "testSecret3");
+        testUpdateWithSameContent(new ApiKeySecretContent("content"), "testSecret4");
+        testUpdateWithSameContent(new JwtTokenSecretContent("token"), "testSecret5");
+        testUpdateWithSameContent(new KeyStoreSecretContent(KeyStoreType.PKCS12, "content", "password"), "testSecret6");
+        testUpdateWithSameContent(new GenericSecretContent("content"),"testSecret7");
+        testUpdateWithSameContent(new SecretKeySecretContent("key"), "testSecret8");
+    }
+
+    private void testUpdateWithSameContent(SecretContent content, String testSecretName) throws AlreadyExistException, NotFoundException {
+        CreateSecretRequestDto createRequest = createRequest(testSecretName,
+                content);
+        secretService.createSecret(createRequest);
+
+        UpdateSecretRequestDto updateRequest = new UpdateSecretRequestDto();
+        updateRequest.setName(testSecretName);
+        updateRequest.setSecret(content);
+        SecretResponseDto response = secretService.updateSecret(updateRequest);
+        Assertions.assertEquals("1", response.getVersion());
     }
 
     @Test
