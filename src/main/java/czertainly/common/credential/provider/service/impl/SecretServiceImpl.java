@@ -9,6 +9,7 @@ import com.czertainly.api.model.connector.secrets.SecretRequestDto;
 import com.czertainly.api.model.connector.secrets.SecretResponseDto;
 import com.czertainly.api.model.connector.secrets.SecretType;
 import com.czertainly.api.model.connector.secrets.UpdateSecretRequestDto;
+import com.czertainly.api.model.connector.secrets.content.SecretContent;
 import czertainly.common.credential.provider.dao.entity.Secret;
 import czertainly.common.credential.provider.dao.entity.SecretCompositeId;
 import czertainly.common.credential.provider.dao.repository.SecretRepository;
@@ -95,6 +96,9 @@ public class SecretServiceImpl implements SecretService {
         Secret latestSecret = secretRepository.findLatestVersionForUpdate(name, secretType)
                 .orElseThrow(() -> new NotFoundException(Secret.class, formatSecretKey(name, secretType)));
 
+        // Retrieve content to check if it has changed
+        SecretContent existingContent = latestSecret.getSecretContent();
+
         // Create a new entity with an incremented version
         Secret newEntity = Secret.builder()
                 .id(new SecretCompositeId(name, secretType, latestSecret.getId().getVersion()))
@@ -103,7 +107,8 @@ public class SecretServiceImpl implements SecretService {
                 .secretAttributes(request.getSecretAttributes())
                 .build();
 
-        newEntity.incrementVersion();
+        if (!existingContent.equals(request.getSecret()))
+            newEntity.incrementVersion();
         newEntity = secretRepository.save(newEntity);
 
         SecretResponseDto response = SecretMapper.toResponse(newEntity);
