@@ -2,7 +2,7 @@ name: Publish Docker image
 
 on:
   push:
-    branches: [ main* ]
+    branches: [ main ]
     tags:
       - '*'
   workflow_dispatch:
@@ -23,5 +23,4 @@ jobs:
     with:
       image: ilm/common-credential-provider
       cache-scope: common-credential-provider
-      build-args: |
-        VERSION=${{ github.ref_name }}
+      pre-build: none

@@ -2,7 +2,7 @@ name: Test Docker image
 
 on:
   pull_request:
-    branches: [ main* ]
+    branches: [ main ]
   workflow_dispatch:
 
 concurrency:
@@ -20,5 +20,4 @@ jobs:
     with:
       image: ilm/common-credential-provider
       cache-scope: common-credential-provider
-      build-args: |
-        VERSION=${{ github.ref_name }}
+      pre-build: none
