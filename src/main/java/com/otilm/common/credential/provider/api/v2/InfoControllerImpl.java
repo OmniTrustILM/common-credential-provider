@@ -2,6 +2,7 @@ package com.otilm.common.credential.provider.api.v2;
 
 import com.otilm.api.interfaces.connector.common.v2.InfoController;
 import com.otilm.api.model.client.connector.v2.*;
+import com.otilm.common.credential.provider.Application;
 import com.otilm.common.credential.provider.ConnectorV2Api;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
@@ -23,7 +24,7 @@ public class InfoControllerImpl implements InfoController {
     @Override
     public InfoResponse getConnectorInfo() {
         ConnectorInfo connectorInfo = new ConnectorInfo();
-        connectorInfo.setId("com.otilm.common.credential.provider");
+        connectorInfo.setId(Application.class.getPackageName());
         connectorInfo.setName("Common Credential Provider");
         connectorInfo.setVersion(buildProperties.getVersion());
 

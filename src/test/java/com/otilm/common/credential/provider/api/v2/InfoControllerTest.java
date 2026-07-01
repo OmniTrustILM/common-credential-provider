@@ -27,5 +27,6 @@ class InfoControllerTest {
 
         assertNotNull(response);
         assertNotNull(response.getConnector());
+        assertEquals("com.otilm.common.credential.provider", response.getConnector().getId());
     }
 }
