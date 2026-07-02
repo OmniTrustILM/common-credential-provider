@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class ExceptionHandlingAdvice {
@@ -77,7 +76,7 @@ public class ExceptionHandlingAdvice {
 
         return ex.getErrors().stream()
                 .map(ValidationError::getErrorDescription)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**

@@ -1,6 +1,5 @@
 package com.otilm.common.credential.provider.api.v2;
 
-import com.otilm.api.exception.NotFoundException;
 import com.otilm.common.credential.provider.api.VaultControllerImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -17,7 +16,7 @@ class VaultControllerTest {
     }
 
     @Test
-    void testListAttributes() throws NotFoundException {
+    void testListAttributes() {
         Assertions.assertEquals(List.of(), vaultController.listVaultAttributes());
     }
 }
