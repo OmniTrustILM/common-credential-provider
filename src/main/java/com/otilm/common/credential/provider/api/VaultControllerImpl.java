@@ -1,7 +1,6 @@
 package com.otilm.common.credential.provider.api;
 
 
-import com.otilm.api.exception.NotFoundException;
 import com.otilm.api.interfaces.connector.secrets.VaultController;
 import com.otilm.api.model.client.attribute.RequestAttribute;
 import com.otilm.api.model.common.attribute.common.BaseAttribute;

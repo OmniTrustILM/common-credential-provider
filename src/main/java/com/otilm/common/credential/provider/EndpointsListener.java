@@ -13,7 +13,6 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Component
 public class EndpointsListener {
@@ -47,6 +46,6 @@ public class EndpointsListener {
 
         return this.endpoints.stream()
                 .filter(e -> regex.matcher(e.getContext()).matches())
-                .collect(Collectors.toList());
+                .toList();
     }
 }
