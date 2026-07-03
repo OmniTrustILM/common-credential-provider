@@ -29,7 +29,9 @@ public class LoggingAdvice {
     protected void loggingPublicOperation() {
     }
 
-    @Pointcut("within(com.otilm.common.credential.provider.api..*)")
+    // Whole base package so controllers in sub-packages (e.g. secret.api) are covered too;
+    // the controller/restController pointcuts below keep advice limited to actual controllers.
+    @Pointcut("within(com.otilm.common.credential.provider..*)")
     private void logAnyFunctionWithinResource() {
     }
 

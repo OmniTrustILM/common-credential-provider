@@ -12,9 +12,9 @@ public final class SecretMapper {
         // Utility class.
     }
 
-    public static Secret toEntity(CreateSecretRequestDto request) {
+    public static Secret toEntity(CreateSecretRequestDto request, String namespace) {
         return Secret.builder()
-                .id(new SecretCompositeId(request.getName(), request.getSecret().getType(), 1))
+                .id(new SecretCompositeId(namespace, request.getName(), request.getSecret().getType(), 1))
                 .secretContent(request.getSecret())
                 .secretAttributes(request.getSecretAttributes())
                 .vaultAttributes(request.getVaultAttributes())

@@ -2,7 +2,9 @@ package com.otilm.common.credential.provider.secret.service.impl;
 
 import com.otilm.api.exception.AlreadyExistException;
 import com.otilm.api.exception.NotFoundException;
+import com.otilm.api.model.client.attribute.RequestAttribute;
 import com.otilm.api.model.common.attribute.common.BaseAttribute;
+import com.otilm.api.model.common.attribute.v2.content.StringAttributeContentV2;
 import com.otilm.api.model.connector.secrets.CreateSecretRequestDto;
 import com.otilm.api.model.connector.secrets.SecretContentResponseDto;
 import com.otilm.api.model.connector.secrets.SecretRequestDto;
@@ -14,8 +16,11 @@ import com.otilm.common.credential.provider.secret.dao.entity.SecretCompositeId;
 import com.otilm.common.credential.provider.secret.dao.repository.SecretRepository;
 import com.otilm.common.credential.provider.secret.service.SecretService;
 import com.otilm.common.credential.provider.secret.mapper.SecretMapper;
+import com.otilm.core.util.AttributeDefinitionUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,14 +42,21 @@ public class SecretServiceImpl implements SecretService {
     public SecretResponseDto createSecret(CreateSecretRequestDto request) throws AlreadyExistException {
         String name = request.getName();
         SecretType secretType = request.getSecret().getType();
-        log.debug("Creating secret {}/{}", name, secretType);
-        ensureSecretDoesNotExist(name, secretType);
+        String namespace = resolveNamespace(request.getVaultAttributes());
+        log.debug("Creating secret {}/{}/{}", namespace, name, secretType);
+        ensureSecretDoesNotExist(namespace, name, secretType);
 
-        Secret entity = SecretMapper.toEntity(request);
-        entity = secretRepository.save(entity);
+        Secret entity = SecretMapper.toEntity(request, namespace);
+        try {
+            // Flush here so a PK collision (concurrent create in the same scope) surfaces now as a
+            // clean AlreadyExistException instead of a raw DataIntegrityViolationException at commit.
+            entity = secretRepository.saveAndFlush(entity);
+        } catch (DataIntegrityViolationException e) {
+            throw new AlreadyExistException(Secret.class, formatSecretKey(namespace, name, secretType));
+        }
 
         SecretResponseDto response = SecretMapper.toResponse(entity);
-        log.debug("Secret {}/{}/{} created", name, secretType, entity.getId().getVersion());
+        log.debug("Secret {}/{}/{}/{} created", namespace, name, secretType, entity.getId().getVersion());
         return response;
     }
 
@@ -54,27 +66,27 @@ public class SecretServiceImpl implements SecretService {
         String name = request.getName();
         SecretType secretType = request.getType();
 
+        String namespace = resolveNamespace(request.getVaultAttributes());
+
         Secret entity;
         if (version != null && !version.isEmpty()) {
             int numericVersion;
             try {
                 numericVersion = Integer.parseInt(version);
             } catch (NumberFormatException e) {
-                throw new NotFoundException(Secret.class, formatSecretKey(name, secretType, version));
+                throw new NotFoundException(Secret.class, formatSecretKey(namespace, name, secretType, version));
             }
-            // Retrieve the specific version
             log.debug("Getting content of secret {}/{}/{}", name, secretType, version);
-            entity = secretRepository.findByNameAndSecretTypeAndVersion(name, secretType, numericVersion)
-                    .orElseThrow(() -> new NotFoundException(Secret.class, formatSecretKey(name, secretType, String.valueOf(numericVersion))));
+            entity = secretRepository.findByNamespaceAndNameAndSecretTypeAndVersion(namespace, name, secretType, numericVersion)
+                    .orElseThrow(() -> new NotFoundException(Secret.class, formatSecretKey(namespace, name, secretType, String.valueOf(numericVersion))));
         } else {
-            // Retrieve the latest version
             version = "latest";
             log.debug("Getting content of secret {}/{}/latest", name, secretType);
-            var allVersions = secretRepository.findByNameAndSecretTypeOrderByVersionDesc(name, secretType);
+            var allVersions = secretRepository.findByNamespaceAndNameAndSecretTypeOrderByVersionDesc(namespace, name, secretType);
             if (allVersions.isEmpty()) {
-                throw new NotFoundException(Secret.class, formatSecretKey(name, secretType));
+                throw new NotFoundException(Secret.class, formatSecretKey(namespace, name, secretType));
             }
-            entity = allVersions.getFirst(); // get the latest version from the ordered list
+            entity = allVersions.getFirst();
         }
 
         SecretContentResponseDto response = SecretMapper.toContentResponse(entity);
@@ -92,12 +104,13 @@ public class SecretServiceImpl implements SecretService {
         // Get the latest version with pessimistic locking (SELECT FOR UPDATE) to prevent race conditions.
         // This ensures that between reading the latest version and creating the new version,
         // no other transaction can create a duplicate secret with the same name, secret type and version.
-        Secret latestSecret = secretRepository.findLatestVersionForUpdate(name, secretType)
-                .orElseThrow(() -> new NotFoundException(Secret.class, formatSecretKey(name, secretType)));
+        String namespace = resolveNamespace(request.getVaultAttributes());
+        Secret latestSecret = secretRepository.findLatestVersionForUpdate(namespace, name, secretType)
+                .orElseThrow(() -> new NotFoundException(Secret.class, formatSecretKey(namespace, name, secretType)));
 
-        // Create a new entity with an incremented version
+        // Create a new entity with an incremented version, in the same scope.
         Secret newEntity = Secret.builder()
-                .id(new SecretCompositeId(name, secretType, latestSecret.getId().getVersion()))
+                .id(new SecretCompositeId(namespace, name, secretType, latestSecret.getId().getVersion()))
                 .secretContent(request.getSecret())
                 .vaultAttributes(request.getVaultAttributes())
                 .secretAttributes(request.getSecretAttributes())
@@ -118,13 +131,14 @@ public class SecretServiceImpl implements SecretService {
         SecretType secretType = request.getType();
         log.debug("Deleting secret {}/{}", name, secretType);
 
-        long deleted = secretRepository.deleteByNameAndSecretType(name, secretType);
+        String namespace = resolveNamespace(request.getVaultAttributes());
+        long deleted = secretRepository.deleteByNamespaceAndNameAndSecretType(namespace, name, secretType);
         if (deleted > 0) {
             log.debug("Deleted {} versions of secret {}/{}", deleted, name, secretType);
             return;
         }
 
-        throw new NotFoundException(Secret.class, formatSecretKey(name, secretType));
+        throw new NotFoundException(Secret.class, formatSecretKey(namespace, name, secretType));
     }
 
     @Override
@@ -145,18 +159,34 @@ public class SecretServiceImpl implements SecretService {
         return List.of();
     }
 
-    private void ensureSecretDoesNotExist(String name, SecretType secretType) throws AlreadyExistException {
-        var existingVersions = secretRepository.findByNameAndSecretTypeOrderByVersionDesc(name, secretType);
+    /**
+     * Resolves the scope from the vault-instance namespace attribute. Returns "" (the root scope)
+     * when no namespace is configured; trims so incidental whitespace can't split a scope.
+     */
+    private static String resolveNamespace(List<RequestAttribute> vaultAttributes) {
+        if (vaultAttributes == null || vaultAttributes.isEmpty()) {
+            return "";
+        }
+        List<StringAttributeContentV2> content = AttributeDefinitionUtils.getAttributeContentValue(
+                VaultAttributeServiceImpl.ATTRIBUTE_NAMESPACE, vaultAttributes, StringAttributeContentV2.class);
+        if (content == null || content.isEmpty() || content.get(0) == null) {
+            return "";
+        }
+        return StringUtils.trimToEmpty(content.get(0).getData());
+    }
+
+    private void ensureSecretDoesNotExist(String namespace, String name, SecretType secretType) throws AlreadyExistException {
+        var existingVersions = secretRepository.findByNamespaceAndNameAndSecretTypeOrderByVersionDesc(namespace, name, secretType);
         if (!existingVersions.isEmpty()) {
-            throw new AlreadyExistException(Secret.class, formatSecretKey(name, secretType));
+            throw new AlreadyExistException(Secret.class, formatSecretKey(namespace, name, secretType));
         }
     }
 
-    private String formatSecretKey(String name, SecretType secretType) {
-        return name + "/" + secretType;
+    private String formatSecretKey(String namespace, String name, SecretType secretType) {
+        return namespace + "/" + name + "/" + secretType;
     }
 
-    private String formatSecretKey(String name, SecretType secretType, String version) {
-        return name + "/" + secretType + "/" + version;
+    private String formatSecretKey(String namespace, String name, SecretType secretType, String version) {
+        return namespace + "/" + name + "/" + secretType + "/" + version;
     }
 }

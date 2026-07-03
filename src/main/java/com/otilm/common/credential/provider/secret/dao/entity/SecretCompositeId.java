@@ -21,6 +21,11 @@ import java.io.Serializable;
 @AllArgsConstructor
 @EqualsAndHashCode
 public class SecretCompositeId implements Serializable {
+    // Scope the secret belongs to; "" is the root scope. Part of the identity so the
+    // same name can exist independently per namespace and scopes stay isolated.
+    @Column(name = "namespace", nullable = false, updatable = false)
+    private String namespace;
+
     @Column(name = "name", nullable = false, updatable = false)
     private String name;
 

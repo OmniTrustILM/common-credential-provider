@@ -2,7 +2,10 @@ package com.otilm.common.credential.provider.secret.service;
 
 import com.otilm.api.exception.AlreadyExistException;
 import com.otilm.api.exception.NotFoundException;
+import com.otilm.api.model.client.attribute.RequestAttribute;
+import com.otilm.api.model.client.attribute.RequestAttributeV2;
 import com.otilm.api.model.common.attribute.common.BaseAttribute;
+import com.otilm.api.model.common.attribute.v2.content.StringAttributeContentV2;
 import com.otilm.api.model.connector.secrets.*;
 import com.otilm.api.model.connector.secrets.content.ApiKeySecretContent;
 import com.otilm.api.model.connector.secrets.content.BasicAuthSecretContent;
@@ -15,6 +18,7 @@ import com.otilm.api.model.connector.secrets.content.SecretContent;
 import com.otilm.common.credential.provider.BuildInfoTestConfig;
 import com.otilm.common.credential.provider.secret.api.SecretControllerImpl;
 import com.otilm.common.credential.provider.secret.dao.repository.SecretRepository;
+import com.otilm.common.credential.provider.secret.service.impl.VaultAttributeServiceImpl;
 import com.otilm.common.credential.provider.secret.util.SecretEncodingVersion;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +41,8 @@ class SecretServiceTest {
 
     private static final String TEST_SECRET_NAME = "testSecret";
     private static final String NON_EXISTENT_SECRET = "nonExistent";
+    private static final String NAMESPACE_A = "team-a";
+    private static final String NAMESPACE_B = "team-b";
 
     @Autowired
     private SecretService secretService;
@@ -278,6 +284,176 @@ class SecretServiceTest {
                 "Encrypted content should start with version prefix 'v1'");
     }
 
+    // ========== Namespace Tests ==========
+
+    @Test
+    void testCreateSecret_WithNamespace_PersistsNamespace() throws AlreadyExistException {
+        secretService.createSecret(createRequest(TEST_SECRET_NAME,
+                new BasicAuthSecretContent("testUser", "testPassword"), NAMESPACE_A));
+
+        Assertions.assertEquals(NAMESPACE_A, queryNamespace(TEST_SECRET_NAME, SecretType.BASIC_AUTH));
+    }
+
+    @Test
+    void testCreateSecret_WithoutNamespace_StoresRootScope() throws AlreadyExistException {
+        secretService.createSecret(createRequest(TEST_SECRET_NAME,
+                new BasicAuthSecretContent("testUser", "testPassword")));
+
+        Assertions.assertEquals("", queryNamespace(TEST_SECRET_NAME, SecretType.BASIC_AUTH));
+    }
+
+    @Test
+    void testCreateSecret_SameNameInDifferentNamespaces_AreIndependent() throws AlreadyExistException, NotFoundException {
+        secretService.createSecret(createRequest(TEST_SECRET_NAME, new JwtTokenSecretContent("tokenA"), NAMESPACE_A));
+        secretService.createSecret(createRequest(TEST_SECRET_NAME, new JwtTokenSecretContent("tokenB"), NAMESPACE_B));
+        secretService.createSecret(createRequest(TEST_SECRET_NAME, new JwtTokenSecretContent("tokenRoot")));
+
+        Assertions.assertEquals(new JwtTokenSecretContent("tokenA"), secretService.getSecretContent(
+                createRequest(TEST_SECRET_NAME, SecretType.JWT_TOKEN, NAMESPACE_A), null).getContent());
+        Assertions.assertEquals(new JwtTokenSecretContent("tokenB"), secretService.getSecretContent(
+                createRequest(TEST_SECRET_NAME, SecretType.JWT_TOKEN, NAMESPACE_B), null).getContent());
+        Assertions.assertEquals(new JwtTokenSecretContent("tokenRoot"), secretService.getSecretContent(
+                createRequest(TEST_SECRET_NAME, SecretType.JWT_TOKEN), null).getContent());
+    }
+
+    @Test
+    void testCreateSecret_DuplicateInSameNamespace_ThrowsAlreadyExist() throws AlreadyExistException {
+        secretService.createSecret(createRequest(TEST_SECRET_NAME, new JwtTokenSecretContent("token"), NAMESPACE_A));
+
+        Assertions.assertThrows(AlreadyExistException.class, () -> secretService.createSecret(
+                createRequest(TEST_SECRET_NAME, new JwtTokenSecretContent("token"), NAMESPACE_A)));
+    }
+
+    @Test
+    void testGetSecretContent_ScopedToSameNamespace_ReturnsContent() throws AlreadyExistException, NotFoundException {
+        secretService.createSecret(createRequest(TEST_SECRET_NAME, new JwtTokenSecretContent("token"), NAMESPACE_A));
+
+        SecretContentResponseDto response = secretService.getSecretContent(
+                createRequest(TEST_SECRET_NAME, SecretType.JWT_TOKEN, NAMESPACE_A), null);
+
+        Assertions.assertNotNull(response);
+        Assertions.assertEquals(new JwtTokenSecretContent("token"), response.getContent());
+    }
+
+    @Test
+    void testGetSecretContent_ScopedToDifferentNamespace_ThrowsNotFound() throws AlreadyExistException {
+        secretService.createSecret(createRequest(TEST_SECRET_NAME, new JwtTokenSecretContent("token"), NAMESPACE_A));
+
+        SecretRequestDto otherNamespace = createRequest(TEST_SECRET_NAME, SecretType.JWT_TOKEN, NAMESPACE_B);
+        Assertions.assertThrows(NotFoundException.class,
+                () -> secretService.getSecretContent(otherNamespace, null));
+    }
+
+    @Test
+    void testGetSecretContent_ScopedByNamespace_SpecificVersion() throws AlreadyExistException, NotFoundException {
+        secretService.createSecret(createRequest(TEST_SECRET_NAME, new JwtTokenSecretContent("token1"), NAMESPACE_A));
+
+        UpdateSecretRequestDto updateRequest = new UpdateSecretRequestDto();
+        updateRequest.setName(TEST_SECRET_NAME);
+        updateRequest.setSecret(new JwtTokenSecretContent("token2"));
+        updateRequest.setVaultAttributes(namespaceVaultAttributes(NAMESPACE_A));
+        secretService.updateSecret(updateRequest);
+
+        SecretContentResponseDto v1 = secretService.getSecretContent(
+                createRequest(TEST_SECRET_NAME, SecretType.JWT_TOKEN, NAMESPACE_A), "1");
+        Assertions.assertEquals("1", v1.getVersion());
+        Assertions.assertEquals(new JwtTokenSecretContent("token1"), v1.getContent());
+
+        // Same version, wrong namespace -> not found.
+        Assertions.assertThrows(NotFoundException.class, () -> secretService.getSecretContent(
+                createRequest(TEST_SECRET_NAME, SecretType.JWT_TOKEN, NAMESPACE_B), "1"));
+    }
+
+    @Test
+    void testUpdateSecret_ScopedByNamespace_IncrementsAndPreservesNamespace() throws AlreadyExistException, NotFoundException {
+        secretService.createSecret(createRequest(TEST_SECRET_NAME, new PrivateKeySecretContent("key1"), NAMESPACE_A));
+
+        UpdateSecretRequestDto updateRequest = new UpdateSecretRequestDto();
+        updateRequest.setName(TEST_SECRET_NAME);
+        updateRequest.setSecret(new PrivateKeySecretContent("key2"));
+        updateRequest.setVaultAttributes(namespaceVaultAttributes(NAMESPACE_A));
+
+        SecretResponseDto response = secretService.updateSecret(updateRequest);
+
+        assertResponseIsValid(response, TEST_SECRET_NAME, SecretType.PRIVATE_KEY, "2");
+        String storedNamespace = jdbcTemplate.queryForObject(
+                "SELECT namespace FROM secret WHERE name = ? AND secret_type = ? AND secret_version = ?",
+                String.class, TEST_SECRET_NAME, SecretType.PRIVATE_KEY.toString(), 2);
+        Assertions.assertEquals(NAMESPACE_A, storedNamespace);
+    }
+
+    @Test
+    void testUpdateSecret_ScopedToDifferentNamespace_ThrowsNotFound() throws AlreadyExistException {
+        secretService.createSecret(createRequest(TEST_SECRET_NAME, new PrivateKeySecretContent("key1"), NAMESPACE_A));
+
+        UpdateSecretRequestDto updateRequest = new UpdateSecretRequestDto();
+        updateRequest.setName(TEST_SECRET_NAME);
+        updateRequest.setSecret(new PrivateKeySecretContent("key2"));
+        updateRequest.setVaultAttributes(namespaceVaultAttributes(NAMESPACE_B));
+
+        Assertions.assertThrows(NotFoundException.class,
+                () -> secretService.updateSecret(updateRequest));
+    }
+
+    @Test
+    void testUpdateSecret_FromRootScope_CannotReachNamespacedSecret() throws AlreadyExistException {
+        secretService.createSecret(createRequest(TEST_SECRET_NAME, new PrivateKeySecretContent("key1"), NAMESPACE_A));
+
+        // No vault attributes => root scope; it must not reach a secret that lives in NAMESPACE_A.
+        UpdateSecretRequestDto rootUpdate = new UpdateSecretRequestDto();
+        rootUpdate.setName(TEST_SECRET_NAME);
+        rootUpdate.setSecret(new PrivateKeySecretContent("key2"));
+
+        Assertions.assertThrows(NotFoundException.class, () -> secretService.updateSecret(rootUpdate));
+    }
+
+    @Test
+    void testDeleteSecret_ScopedToDifferentNamespace_ThrowsNotFoundAndKeepsSecret() throws AlreadyExistException, NotFoundException {
+        secretService.createSecret(createRequest(TEST_SECRET_NAME, new KeyValueSecretContent(Map.of("key", "value")), NAMESPACE_A));
+
+        SecretRequestDto wrongNamespace = createRequest(TEST_SECRET_NAME, SecretType.KEY_VALUE, NAMESPACE_B);
+        Assertions.assertThrows(NotFoundException.class, () -> secretService.deleteSecret(wrongNamespace));
+
+        SecretContentResponseDto response = secretService.getSecretContent(
+                createRequest(TEST_SECRET_NAME, SecretType.KEY_VALUE, NAMESPACE_A), null);
+        Assertions.assertNotNull(response);
+    }
+
+    @Test
+    void testDeleteSecret_ScopedToSameNamespace_RemovesSecret() throws AlreadyExistException, NotFoundException {
+        secretService.createSecret(createRequest(TEST_SECRET_NAME, new KeyValueSecretContent(Map.of("key", "value")), NAMESPACE_A));
+
+        SecretRequestDto deleteRequest = createRequest(TEST_SECRET_NAME, SecretType.KEY_VALUE, NAMESPACE_A);
+        secretService.deleteSecret(deleteRequest);
+
+        Assertions.assertThrows(NotFoundException.class,
+                () -> secretService.getSecretContent(deleteRequest, null));
+    }
+
+    @Test
+    void testResolveNamespace_TrimsWhitespace_SameScope() throws AlreadyExistException, NotFoundException {
+        // A padded namespace on create must resolve to the same scope as its trimmed value on read.
+        secretService.createSecret(createRequest(TEST_SECRET_NAME, new JwtTokenSecretContent("token"), "  team-a  "));
+
+        SecretContentResponseDto response = secretService.getSecretContent(
+                createRequest(TEST_SECRET_NAME, SecretType.JWT_TOKEN, NAMESPACE_A), null);
+        Assertions.assertEquals(new JwtTokenSecretContent("token"), response.getContent());
+        Assertions.assertEquals(NAMESPACE_A, queryNamespace(TEST_SECRET_NAME, SecretType.JWT_TOKEN));
+    }
+
+    @Test
+    void testResolveNamespace_EmptyAttributeContent_IsRootScope() throws AlreadyExistException {
+        CreateSecretRequestDto request = createRequest(TEST_SECRET_NAME, new JwtTokenSecretContent("token"));
+        RequestAttributeV2 emptyNamespace = new RequestAttributeV2();
+        emptyNamespace.setName(VaultAttributeServiceImpl.ATTRIBUTE_NAMESPACE);
+        emptyNamespace.setContent(List.of());
+        request.setVaultAttributes(List.of(emptyNamespace));
+
+        secretService.createSecret(request);
+
+        Assertions.assertEquals("", queryNamespace(TEST_SECRET_NAME, SecretType.JWT_TOKEN));
+    }
+
     // ========== Helper Methods ==========
 
     private CreateSecretRequestDto createRequest(String name, SecretContent secretContent) {
@@ -292,6 +468,31 @@ class SecretServiceTest {
         request.setName(name);
         request.setType(secretType);
         return request;
+    }
+
+    private CreateSecretRequestDto createRequest(String name, SecretContent secretContent, String namespace) {
+        CreateSecretRequestDto request = createRequest(name, secretContent);
+        request.setVaultAttributes(namespaceVaultAttributes(namespace));
+        return request;
+    }
+
+    private SecretRequestDto createRequest(String name, SecretType secretType, String namespace) {
+        SecretRequestDto request = createRequest(name, secretType);
+        request.setVaultAttributes(namespaceVaultAttributes(namespace));
+        return request;
+    }
+
+    private static List<RequestAttribute> namespaceVaultAttributes(String namespace) {
+        RequestAttributeV2 attribute = new RequestAttributeV2();
+        attribute.setName(VaultAttributeServiceImpl.ATTRIBUTE_NAMESPACE);
+        attribute.setContent(List.of(new StringAttributeContentV2(namespace)));
+        return List.of(attribute);
+    }
+
+    private String queryNamespace(String name, SecretType secretType) {
+        return jdbcTemplate.queryForObject(
+                "SELECT namespace FROM secret WHERE name = ? AND secret_type = ?",
+                String.class, name, secretType.toString());
     }
 
     private void assertResponseIsValid(SecretResponseDto response, String expectedName,
