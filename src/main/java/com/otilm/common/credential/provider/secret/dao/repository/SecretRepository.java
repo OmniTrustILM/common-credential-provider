@@ -3,6 +3,7 @@ package com.otilm.common.credential.provider.secret.dao.repository;
 import com.otilm.api.model.connector.secrets.SecretType;
 import com.otilm.common.credential.provider.secret.dao.entity.Secret;
 import com.otilm.common.credential.provider.secret.dao.entity.SecretCompositeId;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
@@ -28,10 +29,11 @@ public interface SecretRepository extends JpaRepository<Secret, SecretCompositeI
     /**
      * Finds the latest version of a secret within a namespace with pessimistic locking
      * (SELECT FOR UPDATE) to prevent concurrent updates from creating a duplicate version.
+     * Call with {@code PageRequest.of(0, 1)} so only the highest version is fetched and locked.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT s FROM Secret s WHERE s.id.namespace = :namespace AND s.id.name = :name AND s.id.secretType = :secretType ORDER BY s.id.version DESC LIMIT 1")
-    Optional<Secret> findLatestVersionForUpdate(@Param("namespace") String namespace, @Param("name") String name, @Param("secretType") SecretType secretType);
+    @Query("SELECT s FROM Secret s WHERE s.id.namespace = :namespace AND s.id.name = :name AND s.id.secretType = :secretType ORDER BY s.id.version DESC")
+    List<Secret> findLatestVersionForUpdate(@Param("namespace") String namespace, @Param("name") String name, @Param("secretType") SecretType secretType, Pageable pageable);
 
     @Modifying
     @Query("DELETE FROM Secret s WHERE s.id.namespace = :namespace AND s.id.name = :name AND s.id.secretType = :secretType")

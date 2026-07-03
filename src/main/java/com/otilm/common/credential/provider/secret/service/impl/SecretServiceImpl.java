@@ -20,6 +20,7 @@ import com.otilm.core.util.AttributeDefinitionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -105,7 +106,8 @@ public class SecretServiceImpl implements SecretService {
         // This ensures that between reading the latest version and creating the new version,
         // no other transaction can create a duplicate secret with the same name, secret type and version.
         String namespace = resolveNamespace(request.getVaultAttributes());
-        Secret latestSecret = secretRepository.findLatestVersionForUpdate(namespace, name, secretType)
+        Secret latestSecret = secretRepository.findLatestVersionForUpdate(namespace, name, secretType, PageRequest.of(0, 1))
+                .stream().findFirst()
                 .orElseThrow(() -> new NotFoundException(Secret.class, formatSecretKey(namespace, name, secretType)));
 
         // Create a new entity with an incremented version, in the same scope.
