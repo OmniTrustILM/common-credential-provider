@@ -29,7 +29,7 @@ public class SecretProviderAttributesServiceImpl implements SecretProviderAttrib
     }
 
     /**
-     * Startup self-validation (umbrella D18): fail fast if the connector-global registry contains a
+     * Startup self-validation: fail fast if the connector-global registry contains a
      * duplicate UUID. The "every {@code dependsOn} attribute is dispatchable" half is vacuously
      * satisfied — this connector declares no callbacks — but the check guards future additions.
      */

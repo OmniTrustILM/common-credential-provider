@@ -11,6 +11,7 @@ import com.otilm.common.credential.provider.secret.service.impl.SecretProviderAt
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.info.BuildProperties;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Properties;
@@ -78,5 +79,21 @@ class SecretProviderAttributesServiceTest {
         AttributeCallbackRequestDto req = new AttributeCallbackRequestDto();
         req.setAttributeUuid(KNOWN);
         assertThrows(AttributeDefinitionNotFoundException.class, () -> service.callback(req));
+    }
+
+    @Test
+    void validateRegistryFailsFastOnDuplicateUuids() {
+        DataAttributeV3 duplicate = new DataAttributeV3();
+        duplicate.setUuid(KNOWN.toString());
+        duplicate.setName("data_namespace_duplicate");
+        when(vaultAttributeService.listVaultAttributes()).thenReturn(List.of(namespaceDef, duplicate));
+
+        assertThrows(IllegalStateException.class,
+                () -> ReflectionTestUtils.invokeMethod(service, "validateRegistry"));
+    }
+
+    @Test
+    void listDefinitionsWithEmptyListReturnsFullRegistry() {
+        assertEquals(1, service.listDefinitions(List.of()).getDefinitions().size());
     }
 }
