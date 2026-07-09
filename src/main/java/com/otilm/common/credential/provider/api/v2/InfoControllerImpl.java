@@ -46,9 +46,18 @@ public class InfoControllerImpl implements InfoController {
         connectorInterfaceInfoSecret.setVersion("v1");
         connectorInterfaceInfoSecret.setFeatures(List.of(FeatureFlag.STATELESS));
 
+        ConnectorInterfaceInfo connectorInterfaceInfoAttributes = new ConnectorInterfaceInfo();
+        connectorInterfaceInfoAttributes.setCode(ConnectorInterface.ATTRIBUTES);
+        connectorInterfaceInfoAttributes.setVersion("v2");
+
         InfoResponse infoResponse = new InfoResponse();
         infoResponse.setConnector(connectorInfo);
-        infoResponse.setInterfaces(List.of(connectorInterfaceInfo, connectorInterfaceInfoHealth, connectorInterfaceInfoMetrics, connectorInterfaceInfoSecret));
+        infoResponse.setInterfaces(List.of(
+                connectorInterfaceInfo,
+                connectorInterfaceInfoHealth,
+                connectorInterfaceInfoMetrics,
+                connectorInterfaceInfoAttributes,
+                connectorInterfaceInfoSecret));
 
         return infoResponse;
     }

@@ -29,4 +29,13 @@ class InfoControllerTest {
         assertNotNull(response.getConnector());
         assertEquals("com.otilm.common.credential.provider", response.getConnector().getId());
     }
+
+    @Test
+    void testGetConnectorInfo_AdvertisesAttributesV2() {
+        InfoResponse response = infoController.getConnectorInfo();
+
+        boolean advertisesAttributesV2 = response.getInterfaces().stream()
+                .anyMatch(i -> i.getCode() == ConnectorInterface.ATTRIBUTES && "v2".equals(i.getVersion()));
+        assertTrue(advertisesAttributesV2, "connector must advertise ATTRIBUTES at version v2");
+    }
 }
