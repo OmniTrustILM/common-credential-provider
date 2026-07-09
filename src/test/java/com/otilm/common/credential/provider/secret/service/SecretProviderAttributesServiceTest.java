@@ -39,7 +39,7 @@ class SecretProviderAttributesServiceTest {
         namespaceDef.setName("data_namespace");
         namespaceDef.setType(AttributeType.DATA);
         namespaceDef.setContentType(AttributeContentType.STRING);
-        when(vaultAttributeService.listVaultAttributes()).thenReturn(List.of(namespaceDef));
+        when(vaultAttributeService.listVaultAttributeDefinitions()).thenReturn(List.of(namespaceDef));
 
         Properties props = new Properties();
         props.setProperty("version", "1.2.3");
@@ -86,7 +86,7 @@ class SecretProviderAttributesServiceTest {
         DataAttributeV3 duplicate = new DataAttributeV3();
         duplicate.setUuid(KNOWN.toString());
         duplicate.setName("data_namespace_duplicate");
-        when(vaultAttributeService.listVaultAttributes()).thenReturn(List.of(namespaceDef, duplicate));
+        when(vaultAttributeService.listVaultAttributeDefinitions()).thenReturn(List.of(namespaceDef, duplicate));
 
         assertThrows(IllegalStateException.class,
                 () -> ReflectionTestUtils.invokeMethod(service, "validateRegistry"));

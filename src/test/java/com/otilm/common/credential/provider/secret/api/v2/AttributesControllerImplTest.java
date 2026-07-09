@@ -1,5 +1,7 @@
 package com.otilm.common.credential.provider.secret.api.v2;
 
+import com.otilm.api.model.client.connector.v2.attribute.AttributeCallbackRequestDto;
+import com.otilm.api.model.client.connector.v2.attribute.AttributeCallbackResponseDto;
 import com.otilm.api.model.client.connector.v2.attribute.AttributeDefinitionsDto;
 import com.otilm.api.model.common.attribute.common.BaseAttribute;
 import com.otilm.common.credential.provider.secret.service.SecretProviderAttributesService;
@@ -34,5 +36,15 @@ class AttributesControllerImplTest {
 
         assertSame(def, controller.getDefinition(uuid));
         verify(service).getDefinition(uuid);
+    }
+
+    @Test
+    void callbackDelegatesToService() {
+        AttributeCallbackRequestDto request = new AttributeCallbackRequestDto();
+        AttributeCallbackResponseDto response = new AttributeCallbackResponseDto();
+        when(service.callback(request)).thenReturn(response);
+
+        assertSame(response, controller.callback(request));
+        verify(service).callback(request);
     }
 }

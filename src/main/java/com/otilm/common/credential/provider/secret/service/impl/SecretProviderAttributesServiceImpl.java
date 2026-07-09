@@ -51,7 +51,7 @@ public class SecretProviderAttributesServiceImpl implements SecretProviderAttrib
      * owner returns them.
      */
     private List<BaseAttribute> allDefinitions() {
-        return vaultAttributeService.listVaultAttributes();
+        return vaultAttributeService.listVaultAttributeDefinitions();
     }
 
     @Override

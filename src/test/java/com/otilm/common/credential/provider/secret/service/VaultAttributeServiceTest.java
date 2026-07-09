@@ -51,4 +51,15 @@ class VaultAttributeServiceTest {
         Assertions.assertNull(namespace.getAttributeCallback(),
                 "data_namespace must declare no callback — options are baked extensible-list content");
     }
+
+    @Test
+    void listVaultAttributeDefinitions_hasNoResolvedContentAndDoesNotQueryNamespaces() {
+        DataAttributeV3 namespace =
+                (DataAttributeV3) vaultAttributeService.listVaultAttributeDefinitions().get(0);
+
+        Assertions.assertEquals(VaultAttributeServiceImpl.ATTRIBUTE_NAMESPACE, namespace.getName());
+        Assertions.assertTrue(namespace.getProperties().isExtensibleList());
+        Assertions.assertNull(namespace.getContent(), "registry definition carries no resolved option content");
+        org.mockito.Mockito.verifyNoInteractions(secretRepository);
+    }
 }
