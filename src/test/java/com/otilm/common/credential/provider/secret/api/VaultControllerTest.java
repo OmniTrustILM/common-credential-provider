@@ -1,15 +1,19 @@
 package com.otilm.common.credential.provider.secret.api;
 
 import com.otilm.api.model.common.attribute.common.BaseAttribute;
+import com.otilm.common.credential.provider.secret.dao.repository.SecretRepository;
 import com.otilm.common.credential.provider.secret.service.impl.VaultAttributeServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.mockito.Mockito.mock;
+
 class VaultControllerTest {
 
-    private final VaultControllerImpl vaultController = new VaultControllerImpl(new VaultAttributeServiceImpl());
+    private final VaultControllerImpl vaultController =
+            new VaultControllerImpl(new VaultAttributeServiceImpl(mock(SecretRepository.class)));
 
     @Test
     void testCheckConnection() {

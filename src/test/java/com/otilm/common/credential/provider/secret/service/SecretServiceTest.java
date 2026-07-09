@@ -3,9 +3,10 @@ package com.otilm.common.credential.provider.secret.service;
 import com.otilm.api.exception.AlreadyExistException;
 import com.otilm.api.exception.NotFoundException;
 import com.otilm.api.model.client.attribute.RequestAttribute;
-import com.otilm.api.model.client.attribute.RequestAttributeV2;
+import com.otilm.api.model.client.attribute.RequestAttributeV3;
 import com.otilm.api.model.common.attribute.common.BaseAttribute;
-import com.otilm.api.model.common.attribute.v2.content.StringAttributeContentV2;
+import com.otilm.api.model.common.attribute.v3.DataAttributeV3;
+import com.otilm.api.model.common.attribute.v3.content.StringAttributeContentV3;
 import com.otilm.api.model.connector.secrets.*;
 import com.otilm.api.model.connector.secrets.content.ApiKeySecretContent;
 import com.otilm.api.model.connector.secrets.content.BasicAuthSecretContent;
@@ -52,6 +53,9 @@ class SecretServiceTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private VaultAttributeService vaultAttributeService;
 
     @BeforeEach
     void setUp() {
@@ -444,7 +448,7 @@ class SecretServiceTest {
     @Test
     void testResolveNamespace_EmptyAttributeContent_IsRootScope() throws AlreadyExistException {
         CreateSecretRequestDto request = createRequest(TEST_SECRET_NAME, new JwtTokenSecretContent("token"));
-        RequestAttributeV2 emptyNamespace = new RequestAttributeV2();
+        RequestAttributeV3 emptyNamespace = new RequestAttributeV3();
         emptyNamespace.setName(VaultAttributeServiceImpl.ATTRIBUTE_NAMESPACE);
         emptyNamespace.setContent(List.of());
         request.setVaultAttributes(List.of(emptyNamespace));
@@ -452,6 +456,20 @@ class SecretServiceTest {
         secretService.createSecret(request);
 
         Assertions.assertEquals("", queryNamespace(TEST_SECRET_NAME, SecretType.JWT_TOKEN));
+    }
+
+    @Test
+    void testListVaultAttributes_OffersExistingNamespacesExcludingRoot() throws AlreadyExistException {
+        secretService.createSecret(createRequest(TEST_SECRET_NAME, new JwtTokenSecretContent("a"), NAMESPACE_A));
+        secretService.createSecret(createRequest("otherSecret", new JwtTokenSecretContent("b"), NAMESPACE_B));
+        secretService.createSecret(createRequest("rootSecret", new JwtTokenSecretContent("r"))); // root scope
+
+        DataAttributeV3 namespaceAttr = (DataAttributeV3) vaultAttributeService.listVaultAttributes().get(0);
+        List<String> offered = namespaceAttr.getContent().stream()
+                .map(c -> ((StringAttributeContentV3) c).getData())
+                .toList();
+
+        Assertions.assertEquals(List.of(NAMESPACE_A, NAMESPACE_B), offered);
     }
 
     // ========== Helper Methods ==========
@@ -483,9 +501,9 @@ class SecretServiceTest {
     }
 
     private static List<RequestAttribute> namespaceVaultAttributes(String namespace) {
-        RequestAttributeV2 attribute = new RequestAttributeV2();
+        RequestAttributeV3 attribute = new RequestAttributeV3();
         attribute.setName(VaultAttributeServiceImpl.ATTRIBUTE_NAMESPACE);
-        attribute.setContent(List.of(new StringAttributeContentV2(namespace)));
+        attribute.setContent(List.of(new StringAttributeContentV3(namespace)));
         return List.of(attribute);
     }
 

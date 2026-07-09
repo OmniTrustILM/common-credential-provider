@@ -4,7 +4,7 @@ import com.otilm.api.exception.AlreadyExistException;
 import com.otilm.api.exception.NotFoundException;
 import com.otilm.api.model.client.attribute.RequestAttribute;
 import com.otilm.api.model.common.attribute.common.BaseAttribute;
-import com.otilm.api.model.common.attribute.v2.content.StringAttributeContentV2;
+import com.otilm.api.model.common.attribute.v3.content.StringAttributeContentV3;
 import com.otilm.api.model.connector.secrets.CreateSecretRequestDto;
 import com.otilm.api.model.connector.secrets.SecretContentResponseDto;
 import com.otilm.api.model.connector.secrets.SecretRequestDto;
@@ -169,8 +169,8 @@ public class SecretServiceImpl implements SecretService {
         if (vaultAttributes == null || vaultAttributes.isEmpty()) {
             return "";
         }
-        List<StringAttributeContentV2> content = AttributeDefinitionUtils.getAttributeContentValue(
-                VaultAttributeServiceImpl.ATTRIBUTE_NAMESPACE, vaultAttributes, StringAttributeContentV2.class);
+        List<StringAttributeContentV3> content = AttributeDefinitionUtils.getAttributeContentValue(
+                VaultAttributeServiceImpl.ATTRIBUTE_NAMESPACE, vaultAttributes, StringAttributeContentV3.class);
         if (content == null || content.isEmpty() || content.get(0) == null) {
             return "";
         }

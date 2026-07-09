@@ -38,4 +38,8 @@ public interface SecretRepository extends JpaRepository<Secret, SecretCompositeI
     @Modifying
     @Query("DELETE FROM Secret s WHERE s.id.namespace = :namespace AND s.id.name = :name AND s.id.secretType = :secretType")
     long deleteByNamespaceAndNameAndSecretType(@Param("namespace") String namespace, @Param("name") String name, @Param("secretType") SecretType secretType);
+
+    /** Distinct named namespaces in use (excludes the root scope ""), offered as options on the namespace attribute. */
+    @Query("SELECT DISTINCT s.id.namespace FROM Secret s WHERE s.id.namespace <> '' ORDER BY s.id.namespace")
+    List<String> findDistinctNamespaces();
 }
