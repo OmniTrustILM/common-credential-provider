@@ -30,17 +30,21 @@ public class SecretProviderAttributesServiceImpl implements SecretProviderAttrib
     }
 
     /**
-     * Startup self-validation: fail fast if the connector-global registry contains a
+     * Startup self-validation: fail fast if the connector-global registry contains a malformed or
      * duplicate UUID. This connector declares no callbacks, so there is no callback-dispatchability
      * check here yet — add one alongside the first attribute that declares a callback.
      */
     @PostConstruct
     void validateRegistry() {
-        Set<String> seen = new HashSet<>();
+        Set<UUID> seen = new HashSet<>();
         for (BaseAttribute definition : allDefinitions()) {
-            if (!seen.add(definition.getUuid())) {
+            UUID uuid = definitionUuid(definition);
+            if (uuid == null) {
                 throw new IllegalStateException(
-                        "Duplicate attribute UUID in connector registry: " + definition.getUuid());
+                        "Attribute UUID is not a valid UUID: " + definition.getUuid());
+            }
+            if (!seen.add(uuid)) {
+                throw new IllegalStateException("Duplicate attribute UUID in connector registry: " + uuid);
             }
         }
     }
@@ -59,10 +63,9 @@ public class SecretProviderAttributesServiceImpl implements SecretProviderAttrib
     public AttributeDefinitionsDto listDefinitions(List<UUID> uuids) {
         List<BaseAttribute> definitions = allDefinitions();
         if (uuids != null && !uuids.isEmpty()) {
-            Set<String> wanted = new HashSet<>();
-            uuids.forEach(uuid -> wanted.add(uuid.toString()));
+            Set<UUID> wanted = new HashSet<>(uuids);
             definitions = definitions.stream()
-                    .filter(definition -> wanted.contains(definition.getUuid()))
+                    .filter(definition -> wanted.contains(definitionUuid(definition)))
                     .toList();
         }
         AttributeDefinitionsDto dto = new AttributeDefinitionsDto();
@@ -73,9 +76,8 @@ public class SecretProviderAttributesServiceImpl implements SecretProviderAttrib
 
     @Override
     public BaseAttribute getDefinition(UUID uuid) {
-        String key = uuid.toString();
         return allDefinitions().stream()
-                .filter(definition -> key.equals(definition.getUuid()))
+                .filter(definition -> uuid.equals(definitionUuid(definition)))
                 .findFirst()
                 .orElseThrow(() -> new AttributeDefinitionNotFoundException(uuid));
     }
@@ -83,16 +85,32 @@ public class SecretProviderAttributesServiceImpl implements SecretProviderAttrib
     @Override
     public AttributeCallbackResponseDto callback(AttributeCallbackRequestDto request) {
         UUID uuid = request.getAttributeUuid();
-        String key = uuid.toString();
         boolean known = allDefinitions().stream()
-                .anyMatch(definition -> key.equals(definition.getUuid()));
+                .anyMatch(definition -> uuid.equals(definitionUuid(definition)));
         if (!known) {
             // Unknown to this connector — 404; Core refreshing its registry is a sensible reaction.
             throw new AttributeDefinitionNotFoundException(uuid);
         }
-        // Known, but this connector declares no NG callback (dependsOn), so nothing is dispatchable;
-        // a registry refresh would not change that, so reject as non-retryable rather than not-found.
-        // In normal operation Core never calls this — it only dispatches attributes advertising dependsOn.
+        // The attribute is known but declares no NG callback, so nothing can be resolved. A registry
+        // refresh would not change that, so this is a non-retryable rejection rather than a not-found.
+        // Core does not reach here in normal operation — it dispatches only callback-enabled attributes.
         throw new AttributeCallbackNotSupportedException(uuid);
+    }
+
+    /**
+     * The attribute's identifier as a {@link UUID}, or {@code null} if it is absent or not a valid
+     * UUID. Matching by value keeps lookups correct regardless of the identifier's textual form;
+     * {@link #validateRegistry()} rejects a malformed identifier at startup.
+     */
+    private static UUID definitionUuid(BaseAttribute definition) {
+        String raw = definition.getUuid();
+        if (raw == null) {
+            return null;
+        }
+        try {
+            return UUID.fromString(raw);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 }

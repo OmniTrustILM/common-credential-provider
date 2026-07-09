@@ -3,9 +3,10 @@ package com.otilm.common.credential.provider.secret.api.v2;
 import java.util.UUID;
 
 /**
- * Thrown when a requested attribute UUID is not a resolvable definition on this connector —
- * unknown to the registry, or (on the callback surface) present but not callback-dispatchable.
- * Unchecked because the {@code AttributesController} interface methods declare no checked exceptions.
+ * Thrown when a requested attribute UUID is unknown to this connector's registry (no matching
+ * definition). A known attribute that merely declares no callback is a different case — see
+ * {@link AttributeCallbackNotSupportedException}. Unchecked because the {@code AttributesController}
+ * interface methods declare no checked exceptions.
  */
 public class AttributeDefinitionNotFoundException extends RuntimeException {
 

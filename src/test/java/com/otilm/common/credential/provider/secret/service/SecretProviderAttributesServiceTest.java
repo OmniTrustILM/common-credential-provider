@@ -3,7 +3,6 @@ package com.otilm.common.credential.provider.secret.service;
 import com.otilm.api.model.client.connector.v2.attribute.AttributeCallbackRequestDto;
 import com.otilm.api.model.client.connector.v2.attribute.AttributeDefinitionsDto;
 import com.otilm.api.model.common.attribute.common.AttributeType;
-import com.otilm.api.model.common.attribute.common.BaseAttribute;
 import com.otilm.api.model.common.attribute.common.content.AttributeContentType;
 import com.otilm.api.model.common.attribute.v3.DataAttributeV3;
 import com.otilm.common.credential.provider.secret.api.v2.AttributeCallbackNotSupportedException;
@@ -60,8 +59,9 @@ class SecretProviderAttributesServiceTest {
         AttributeDefinitionsDto known = service.listDefinitions(List.of(KNOWN));
         assertEquals(1, known.getDefinitions().size());
 
-        AttributeDefinitionsDto unknown = service.listDefinitions(List.of(UUID.randomUUID()));
-        assertTrue(unknown.getDefinitions().isEmpty());
+        UUID unknown = UUID.randomUUID();
+        AttributeDefinitionsDto missing = service.listDefinitions(List.of(unknown));
+        assertTrue(missing.getDefinitions().isEmpty());
     }
 
     @Test
@@ -70,9 +70,19 @@ class SecretProviderAttributesServiceTest {
     }
 
     @Test
+    void getDefinitionMatchesRegardlessOfUuidStringCasing() {
+        DataAttributeV3 upperCaseUuid = new DataAttributeV3();
+        upperCaseUuid.setUuid(KNOWN.toString().toUpperCase());
+        upperCaseUuid.setName("data_namespace");
+        when(vaultAttributeService.listVaultAttributeDefinitions()).thenReturn(List.of(upperCaseUuid));
+
+        assertSame(upperCaseUuid, service.getDefinition(KNOWN));
+    }
+
+    @Test
     void getDefinitionThrowsForUnknownUuid() {
-        assertThrows(AttributeDefinitionNotFoundException.class,
-                () -> service.getDefinition(UUID.randomUUID()));
+        UUID unknown = UUID.randomUUID();
+        assertThrows(AttributeDefinitionNotFoundException.class, () -> service.getDefinition(unknown));
     }
 
     @Test
@@ -84,8 +94,9 @@ class SecretProviderAttributesServiceTest {
 
     @Test
     void callbackForUnknownAttributeThrowsNotFound() {
+        UUID unknown = UUID.randomUUID();
         AttributeCallbackRequestDto req = new AttributeCallbackRequestDto();
-        req.setAttributeUuid(UUID.randomUUID());
+        req.setAttributeUuid(unknown);
         assertThrows(AttributeDefinitionNotFoundException.class, () -> service.callback(req));
     }
 
