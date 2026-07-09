@@ -30,8 +30,8 @@ public class SecretProviderAttributesServiceImpl implements SecretProviderAttrib
 
     /**
      * Startup self-validation: fail fast if the connector-global registry contains a
-     * duplicate UUID. The "every {@code dependsOn} attribute is dispatchable" half is vacuously
-     * satisfied — this connector declares no callbacks — but the check guards future additions.
+     * duplicate UUID. This connector declares no callbacks, so there is no callback-dispatchability
+     * check here yet — add one alongside the first attribute that declares a callback.
      */
     @PostConstruct
     void validateRegistry() {

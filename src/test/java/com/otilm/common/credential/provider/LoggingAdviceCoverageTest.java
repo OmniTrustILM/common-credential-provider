@@ -28,7 +28,7 @@ class LoggingAdviceCoverageTest {
     private AttributesController attributesController;
 
     @Test
-    void secretAndVaultControllersAreAdvisedByLoggingAdvice() {
+    void ngControllersAreAdvisedByLoggingAdvice() {
         Assertions.assertTrue(AopUtils.isAopProxy(secretController),
                 "SecretController must be advised by LoggingAdvice");
         Assertions.assertTrue(AopUtils.isAopProxy(vaultController),
