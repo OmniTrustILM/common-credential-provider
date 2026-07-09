@@ -41,6 +41,6 @@ class VaultAttributeServiceTest {
 
     @Test
     void listVaultProfileAttributes_isEmpty() {
-        Assertions.assertEquals(List.of(), vaultAttributeService.listVaultProfileAttributes(List.of()));
+        Assertions.assertEquals(List.of(), vaultAttributeService.listVaultProfileAttributes());
     }
 }

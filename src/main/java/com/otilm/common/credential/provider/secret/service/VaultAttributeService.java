@@ -1,6 +1,5 @@
 package com.otilm.common.credential.provider.secret.service;
 
-import com.otilm.api.model.client.attribute.RequestAttribute;
 import com.otilm.api.model.common.attribute.common.BaseAttribute;
 
 import java.util.List;
@@ -15,5 +14,5 @@ public interface VaultAttributeService {
 
     List<BaseAttribute> listVaultAttributes();
 
-    List<BaseAttribute> listVaultProfileAttributes(List<RequestAttribute> vaultAttributes);
+    List<BaseAttribute> listVaultProfileAttributes();
 }

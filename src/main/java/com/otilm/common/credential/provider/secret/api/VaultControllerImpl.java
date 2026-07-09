@@ -34,6 +34,6 @@ public class VaultControllerImpl implements VaultController {
 
     @Override
     public List<BaseAttribute> listVaultProfileAttributes(List<RequestAttribute> attributes) {
-        return vaultAttributeService.listVaultProfileAttributes(attributes);
+        return vaultAttributeService.listVaultProfileAttributes();
     }
 }

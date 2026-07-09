@@ -28,7 +28,7 @@ import java.util.Objects;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public final class Secret {
+public class Secret {
     @EmbeddedId
     private SecretCompositeId id;
 

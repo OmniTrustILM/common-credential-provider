@@ -12,6 +12,7 @@ class SecretTest {
     @Test
     void testEqualsAndHashCode() {
         EqualsVerifier.forClass(Secret.class)
+                .usingGetClass()
                 .suppress(Warning.SURROGATE_KEY)
                 .suppress(Warning.NONFINAL_FIELDS)
                 .suppress(Warning.ALL_FIELDS_SHOULD_BE_USED)

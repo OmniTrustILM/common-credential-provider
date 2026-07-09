@@ -1,6 +1,5 @@
 package com.otilm.common.credential.provider.secret.service.impl;
 
-import com.otilm.api.model.client.attribute.RequestAttribute;
 import com.otilm.api.model.common.attribute.common.AttributeType;
 import com.otilm.api.model.common.attribute.common.BaseAttribute;
 import com.otilm.api.model.common.attribute.common.content.AttributeContentType;
@@ -32,7 +31,7 @@ public class VaultAttributeServiceImpl implements VaultAttributeService {
     }
 
     @Override
-    public List<BaseAttribute> listVaultProfileAttributes(List<RequestAttribute> vaultAttributes) {
+    public List<BaseAttribute> listVaultProfileAttributes() {
         return List.of();
     }
 
