@@ -6,6 +6,7 @@ import com.otilm.api.model.common.attribute.common.AttributeType;
 import com.otilm.api.model.common.attribute.common.BaseAttribute;
 import com.otilm.api.model.common.attribute.common.content.AttributeContentType;
 import com.otilm.api.model.common.attribute.v3.DataAttributeV3;
+import com.otilm.common.credential.provider.secret.api.v2.AttributeCallbackNotSupportedException;
 import com.otilm.common.credential.provider.secret.api.v2.AttributeDefinitionNotFoundException;
 import com.otilm.common.credential.provider.secret.service.impl.SecretProviderAttributesServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,9 +76,16 @@ class SecretProviderAttributesServiceTest {
     }
 
     @Test
-    void callbackAlwaysThrowsBecauseNoAttributeIsDispatchable() {
+    void callbackForKnownButNonDispatchableAttributeThrowsNotSupported() {
         AttributeCallbackRequestDto req = new AttributeCallbackRequestDto();
         req.setAttributeUuid(KNOWN);
+        assertThrows(AttributeCallbackNotSupportedException.class, () -> service.callback(req));
+    }
+
+    @Test
+    void callbackForUnknownAttributeThrowsNotFound() {
+        AttributeCallbackRequestDto req = new AttributeCallbackRequestDto();
+        req.setAttributeUuid(UUID.randomUUID());
         assertThrows(AttributeDefinitionNotFoundException.class, () -> service.callback(req));
     }
 

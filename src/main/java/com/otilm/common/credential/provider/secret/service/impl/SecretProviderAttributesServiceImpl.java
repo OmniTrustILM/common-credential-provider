@@ -4,6 +4,7 @@ import com.otilm.api.model.client.connector.v2.attribute.AttributeCallbackReques
 import com.otilm.api.model.client.connector.v2.attribute.AttributeCallbackResponseDto;
 import com.otilm.api.model.client.connector.v2.attribute.AttributeDefinitionsDto;
 import com.otilm.api.model.common.attribute.common.BaseAttribute;
+import com.otilm.common.credential.provider.secret.api.v2.AttributeCallbackNotSupportedException;
 import com.otilm.common.credential.provider.secret.api.v2.AttributeDefinitionNotFoundException;
 import com.otilm.common.credential.provider.secret.service.SecretProviderAttributesService;
 import com.otilm.common.credential.provider.secret.service.VaultAttributeService;
@@ -47,8 +48,8 @@ public class SecretProviderAttributesServiceImpl implements SecretProviderAttrib
     /**
      * Every NG attribute definition this connector exposes. Only vault-instance attributes are
      * non-empty today; the other NG sources (vault-profile, per-secret-type, rotate) return empty,
-     * so aggregating {@code listVaultAttributes()} is complete. New attributes appear here once their
-     * owner returns them.
+     * so aggregating {@code listVaultAttributeDefinitions()} is complete. New attributes appear here
+     * once their owner returns them.
      */
     private List<BaseAttribute> allDefinitions() {
         return vaultAttributeService.listVaultAttributeDefinitions();
@@ -81,8 +82,17 @@ public class SecretProviderAttributesServiceImpl implements SecretProviderAttrib
 
     @Override
     public AttributeCallbackResponseDto callback(AttributeCallbackRequestDto request) {
-        // No attribute declares an NG callback (dependsOn), so nothing is dispatchable. In normal
-        // operation Core never calls this — it only dispatches for attributes advertising dependsOn.
-        throw new AttributeDefinitionNotFoundException(request.getAttributeUuid());
+        UUID uuid = request.getAttributeUuid();
+        String key = uuid.toString();
+        boolean known = allDefinitions().stream()
+                .anyMatch(definition -> key.equals(definition.getUuid()));
+        if (!known) {
+            // Unknown to this connector — 404; Core refreshing its registry is a sensible reaction.
+            throw new AttributeDefinitionNotFoundException(uuid);
+        }
+        // Known, but this connector declares no NG callback (dependsOn), so nothing is dispatchable;
+        // a registry refresh would not change that, so reject as non-retryable rather than not-found.
+        // In normal operation Core never calls this — it only dispatches attributes advertising dependsOn.
+        throw new AttributeCallbackNotSupportedException(uuid);
     }
 }
