@@ -43,4 +43,12 @@ class VaultAttributeServiceTest {
     void listVaultProfileAttributes_isEmpty() {
         Assertions.assertEquals(List.of(), vaultAttributeService.listVaultProfileAttributes());
     }
+
+    @Test
+    void namespaceAttributeDeclaresNoCallback() {
+        DataAttributeV3 namespace =
+                (DataAttributeV3) vaultAttributeService.listVaultAttributes().get(0);
+        Assertions.assertNull(namespace.getAttributeCallback(),
+                "data_namespace must declare no callback — options are baked extensible-list content");
+    }
 }
