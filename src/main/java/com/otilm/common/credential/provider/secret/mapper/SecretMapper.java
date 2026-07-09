@@ -1,0 +1,38 @@
+package com.otilm.common.credential.provider.secret.mapper;
+
+import com.otilm.api.model.connector.secrets.CreateSecretRequestDto;
+import com.otilm.api.model.connector.secrets.SecretContentResponseDto;
+import com.otilm.api.model.connector.secrets.SecretResponseDto;
+import com.otilm.common.credential.provider.secret.dao.entity.Secret;
+import com.otilm.common.credential.provider.secret.dao.entity.SecretCompositeId;
+
+public final class SecretMapper {
+
+    private SecretMapper() {
+        // Utility class.
+    }
+
+    public static Secret toEntity(CreateSecretRequestDto request, String namespace) {
+        return Secret.builder()
+                .id(new SecretCompositeId(namespace, request.getName(), request.getSecret().getType(), 1))
+                .secretContent(request.getSecret())
+                .secretAttributes(request.getSecretAttributes())
+                .vaultAttributes(request.getVaultAttributes())
+                .build();
+    }
+
+    public static SecretResponseDto toResponse(Secret entity) {
+        return SecretResponseDto.builder()
+                .name(entity.getId().getName())
+                .type(entity.getId().getSecretType())
+                .version(String.valueOf(entity.getId().getVersion()))
+                .build();
+    }
+
+    public static SecretContentResponseDto toContentResponse(Secret entity) {
+        return SecretContentResponseDto.builder()
+                .version(String.valueOf(entity.getId().getVersion()))
+                .content(entity.getSecretContent())
+                .build();
+    }
+}
