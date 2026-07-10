@@ -32,7 +32,7 @@ public class SecretProviderAttributesServiceImpl implements SecretProviderAttrib
     /**
      * Startup self-validation: fail fast if the connector-global registry contains a malformed or
      * duplicate UUID. This connector declares no callbacks, so there is no callback-dispatchability
-     * check here yet — add one alongside the first attribute that declares a callback.
+     * check here yet.
      */
     @PostConstruct
     void validateRegistry() {
@@ -50,10 +50,11 @@ public class SecretProviderAttributesServiceImpl implements SecretProviderAttrib
     }
 
     /**
-     * Every NG attribute definition this connector exposes. Only vault-instance attributes are
-     * non-empty today; the other NG sources (vault-profile, per-secret-type, rotate) return empty,
-     * so aggregating {@code listVaultAttributeDefinitions()} is complete. New attributes appear here
-     * once their owner returns them.
+     * Every NG attribute definition this connector exposes. Today that is only the vault-instance
+     * attributes: the other NG sources (vault-profile, per-secret-type, rotate) return empty — pinned
+     * by their own tests — so aggregating {@code listVaultAttributeDefinitions()} is complete. If any
+     * of those sources ever becomes non-empty it must be wired in here too, or it will be absent from
+     * the registry.
      */
     private List<BaseAttribute> allDefinitions() {
         return vaultAttributeService.listVaultAttributeDefinitions();

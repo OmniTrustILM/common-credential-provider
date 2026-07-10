@@ -11,7 +11,7 @@ import java.util.UUID;
  */
 public class AttributeCallbackNotSupportedException extends RuntimeException {
 
-    private final transient UUID uuid;
+    private final UUID uuid;
 
     public AttributeCallbackNotSupportedException(UUID uuid) {
         super("Attribute defines no callback: " + uuid);

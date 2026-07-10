@@ -10,7 +10,7 @@ import java.util.UUID;
  */
 public class AttributeDefinitionNotFoundException extends RuntimeException {
 
-    private final transient UUID uuid;
+    private final UUID uuid;
 
     public AttributeDefinitionNotFoundException(UUID uuid) {
         super("Attribute definition not found for UUID: " + uuid);

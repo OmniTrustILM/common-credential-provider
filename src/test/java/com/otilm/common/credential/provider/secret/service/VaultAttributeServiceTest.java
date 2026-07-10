@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class VaultAttributeServiceTest {
@@ -60,6 +61,6 @@ class VaultAttributeServiceTest {
         Assertions.assertEquals(VaultAttributeServiceImpl.ATTRIBUTE_NAMESPACE, namespace.getName());
         Assertions.assertTrue(namespace.getProperties().isExtensibleList());
         Assertions.assertNull(namespace.getContent(), "registry definition carries no resolved option content");
-        org.mockito.Mockito.verifyNoInteractions(secretRepository);
+        verifyNoInteractions(secretRepository);
     }
 }
