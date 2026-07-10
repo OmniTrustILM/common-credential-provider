@@ -7,7 +7,7 @@ COPY docker /home/app/docker
 RUN mvn -f /home/app/pom.xml clean package
 
 # Package stage
-FROM eclipse-temurin:21.0.10_7-jre-alpine
+FROM eclipse-temurin:21.0.11_10-jre-alpine
 
 LABEL org.opencontainers.image.authors="ILM <support@otilm.com>"
 
