@@ -14,5 +14,12 @@ public interface VaultAttributeService {
 
     List<BaseAttribute> listVaultAttributes();
 
+    /**
+     * The vault attribute definitions as pure shape — no resolved option content, so no DB read.
+     * The Attributes v2 registry uses this; {@link #listVaultAttributes()} is the form-rendering
+     * path that additionally populates dynamic option content.
+     */
+    List<BaseAttribute> listVaultAttributeDefinitions();
+
     List<BaseAttribute> listVaultProfileAttributes();
 }

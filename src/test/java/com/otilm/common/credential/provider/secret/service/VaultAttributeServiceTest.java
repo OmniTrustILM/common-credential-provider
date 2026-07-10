@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class VaultAttributeServiceTest {
@@ -42,5 +43,24 @@ class VaultAttributeServiceTest {
     @Test
     void listVaultProfileAttributes_isEmpty() {
         Assertions.assertEquals(List.of(), vaultAttributeService.listVaultProfileAttributes());
+    }
+
+    @Test
+    void namespaceAttributeDeclaresNoCallback() {
+        DataAttributeV3 namespace =
+                (DataAttributeV3) vaultAttributeService.listVaultAttributes().get(0);
+        Assertions.assertNull(namespace.getAttributeCallback(),
+                "data_namespace must declare no callback — options are baked extensible-list content");
+    }
+
+    @Test
+    void listVaultAttributeDefinitions_hasNoResolvedContentAndDoesNotQueryNamespaces() {
+        DataAttributeV3 namespace =
+                (DataAttributeV3) vaultAttributeService.listVaultAttributeDefinitions().get(0);
+
+        Assertions.assertEquals(VaultAttributeServiceImpl.ATTRIBUTE_NAMESPACE, namespace.getName());
+        Assertions.assertTrue(namespace.getProperties().isExtensibleList());
+        Assertions.assertNull(namespace.getContent(), "registry definition carries no resolved option content");
+        verifyNoInteractions(secretRepository);
     }
 }

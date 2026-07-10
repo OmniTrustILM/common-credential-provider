@@ -3,6 +3,8 @@ package com.otilm.common.credential.provider;
 import com.otilm.api.exception.*;
 import com.otilm.api.model.common.error.ErrorCode;
 import com.otilm.api.model.common.error.ProblemDetailExtended;
+import com.otilm.common.credential.provider.secret.api.v2.AttributeCallbackNotSupportedException;
+import com.otilm.common.credential.provider.secret.api.v2.AttributeDefinitionNotFoundException;
 import jakarta.validation.constraints.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +71,18 @@ public class ProblemDetailsHandlingAdvice extends ResponseEntityExceptionHandler
     public ProblemDetail handleAlreadyExistException(AlreadyExistException ex) {
         LOG.error("Already exist error occurred: {}", ex.getMessage(), ex);
         return ProblemDetailExtended.fromErrorCode(ErrorCode.RESOURCE_ALREADY_EXISTS, ex.getMessage(), null, null);
+    }
+
+    @ExceptionHandler(AttributeDefinitionNotFoundException.class)
+    public ProblemDetail handleAttributeDefinitionNotFound(AttributeDefinitionNotFoundException ex) {
+        LOG.error("Attribute definition not found: {}", ex.getMessage(), ex);
+        return ProblemDetailExtended.fromErrorCode(ErrorCode.ATTRIBUTE_DEFINITION_NOT_FOUND, ex.getMessage(), null, null);
+    }
+
+    @ExceptionHandler(AttributeCallbackNotSupportedException.class)
+    public ProblemDetail handleAttributeCallbackNotSupported(AttributeCallbackNotSupportedException ex) {
+        LOG.error("Attribute callback not supported: {}", ex.getMessage(), ex);
+        return ProblemDetailExtended.fromErrorCode(ErrorCode.VALIDATION_FAILED, ex.getMessage(), null, null);
     }
 
     @ExceptionHandler(Exception.class)

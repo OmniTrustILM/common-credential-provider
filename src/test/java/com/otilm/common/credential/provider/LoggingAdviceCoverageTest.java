@@ -1,5 +1,6 @@
 package com.otilm.common.credential.provider;
 
+import com.otilm.api.interfaces.connector.common.v2.AttributesController;
 import com.otilm.api.interfaces.connector.secrets.SecretController;
 import com.otilm.api.interfaces.connector.secrets.VaultController;
 import org.junit.jupiter.api.Assertions;
@@ -23,11 +24,16 @@ class LoggingAdviceCoverageTest {
     @Autowired
     private VaultController vaultController;
 
+    @Autowired
+    private AttributesController attributesController;
+
     @Test
-    void secretAndVaultControllersAreAdvisedByLoggingAdvice() {
+    void ngControllersAreAdvisedByLoggingAdvice() {
         Assertions.assertTrue(AopUtils.isAopProxy(secretController),
                 "SecretController must be advised by LoggingAdvice");
         Assertions.assertTrue(AopUtils.isAopProxy(vaultController),
                 "VaultController must be advised by LoggingAdvice");
+        Assertions.assertTrue(AopUtils.isAopProxy(attributesController),
+                "AttributesController must be advised by LoggingAdvice");
     }
 }

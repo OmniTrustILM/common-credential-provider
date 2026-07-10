@@ -27,7 +27,18 @@ public class VaultAttributeServiceImpl implements VaultAttributeService {
 
     @Override
     public List<BaseAttribute> listVaultAttributes() {
-        return List.of(namespaceAttribute());
+        DataAttributeV3 namespace = namespaceDefinition();
+        // Offer the namespaces already in use as options; extensibleList lets the operator type a new one.
+        List<StringAttributeContentV3> existing = secretRepository.findDistinctNamespaces().stream()
+                .map(StringAttributeContentV3::new)
+                .toList();
+        namespace.setContent(existing);
+        return List.of(namespace);
+    }
+
+    @Override
+    public List<BaseAttribute> listVaultAttributeDefinitions() {
+        return List.of(namespaceDefinition());
     }
 
     @Override
@@ -35,19 +46,13 @@ public class VaultAttributeServiceImpl implements VaultAttributeService {
         return List.of();
     }
 
-    private BaseAttribute namespaceAttribute() {
+    private DataAttributeV3 namespaceDefinition() {
         DataAttributeV3 namespace = new DataAttributeV3();
         namespace.setUuid(ATTRIBUTE_NAMESPACE_UUID);
         namespace.setName(ATTRIBUTE_NAMESPACE);
         namespace.setDescription("Optional namespace used to group and scope secrets within this vault");
         namespace.setType(AttributeType.DATA);
         namespace.setContentType(AttributeContentType.STRING);
-
-        // Offer the namespaces already in use as options; extensibleList lets the operator type a new one.
-        List<StringAttributeContentV3> existing = secretRepository.findDistinctNamespaces().stream()
-                .map(StringAttributeContentV3::new)
-                .toList();
-        namespace.setContent(existing);
 
         DataAttributeProperties properties = new DataAttributeProperties();
         properties.setLabel(ATTRIBUTE_NAMESPACE_LABEL);
